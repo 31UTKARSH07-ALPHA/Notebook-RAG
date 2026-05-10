@@ -5,3 +5,4 @@ node_modules
 qdrant_storage
 *.log
 .vercel
+.env.example
