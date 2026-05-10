@@ -1,12 +1,10 @@
 import { randomUUID } from "crypto";
 import { Document } from "@langchain/core/documents";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import {
-  ChatGoogleGenerativeAI,
-  GoogleGenerativeAIEmbeddings,
-} from "@langchain/google-genai";
+import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { QdrantVectorStore } from "@langchain/qdrant";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import PDFParser from "pdf2json";
 
 const CHUNK_SIZE = 1000;
 const CHUNK_OVERLAP = 200;
@@ -20,13 +18,9 @@ export type SourceChunk = {
 
 function requireEnv(name: string) {
   const value = process.env[name];
-
   if (!value) {
-    throw new Error(
-      `${name} is not configured. Add it to your environment variables.`,
-    );
+    throw new Error(`${name} is not configured. Add it to your environment variables.`);
   }
-
   return value;
 }
 
@@ -34,7 +28,7 @@ function getQdrantConfig() {
   return {
     url: requireEnv("QDRANT_URL"),
     apiKey: process.env.QDRANT_API_KEY,
-    collectionName: "",
+    collectionName: ""
   };
 }
 
@@ -45,19 +39,59 @@ export function createCollectionName() {
 
 export function getEmbeddings() {
   requireEnv("GOOGLE_API_KEY");
-
   return new GoogleGenerativeAIEmbeddings({
-    modelName: "embedding-001",
+    modelName: "text-embedding-004"
   });
 }
 
 export function getChatModel() {
   requireEnv("GOOGLE_API_KEY");
-
   return new ChatGoogleGenerativeAI({
     model: "gemini-1.5-flash",
     temperature: 0.1,
-    maxOutputTokens: 1200,
+    maxOutputTokens: 1200
+  });
+}
+
+function parsePdfBuffer(buffer: Buffer): Promise<Document[]> {
+  return new Promise((resolve, reject) => {
+    const pdfParser = new (PDFParser as any)(null, 1);
+
+    pdfParser.on("pdfParser_dataError", (err: any) => {
+      reject(new Error(err?.parserError || "Failed to parse PDF"));
+    });
+
+    pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+      try {
+        const pages: Document[] = (pdfData?.Pages || [])
+          .map((page: any, index: number) => {
+            const text = (page?.Texts || [])
+              .map((t: any) =>
+                (t?.R || [])
+                  .map((r: any) => decodeURIComponent(r?.T || ""))
+                  .join("")
+              )
+              .join(" ")
+              .replace(/\s+/g, " ")
+              .trim();
+
+            return new Document({
+              pageContent: text,
+              metadata: {
+                type: "pdf",
+                loc: { pageNumber: index + 1 }
+              }
+            });
+          })
+          .filter((doc: Document) => doc.pageContent.length > 0);
+
+        resolve(pages);
+      } catch (e) {
+        reject(e);
+      }
+    });
+
+    pdfParser.parseBuffer(buffer);
   });
 }
 
@@ -70,65 +104,26 @@ export async function parseUploadedFile(file: File) {
     return [
       new Document({
         pageContent: text,
-        metadata: {
-          source: fileName,
-          type: "text",
-        },
-      }),
+        metadata: { source: fileName, type: "text" }
+      })
     ];
   }
 
-  if (
-    mimeType === "application/pdf" ||
-    fileName.toLowerCase().endsWith(".pdf")
-  ) {
-    const bytes = new Uint8Array(await file.arrayBuffer());
-
-    // Dynamically import pdfjs-dist legacy build (works in Node/Next.js API routes)
-    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs" as string);
-
-    // Disable worker for Node.js environment
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "";
-
-    const loadingTask = pdfjsLib.getDocument({
-      data: bytes,
-      useWorkerFetch: false,
-      isEvalSupported: false,
-      useSystemFonts: true,
-    });
-
-    const pdf = await loadingTask.promise;
-    const pages: Document[] = [];
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const text = content.items
-        .map((item: any) => ("str" in item ? item.str : ""))
-        .join(" ")
-        .trim();
-
-      if (text.length > 0) {
-        pages.push(
-          new Document({
-            pageContent: text,
-            metadata: {
-              source: fileName,
-              type: "pdf",
-              loc: { pageNumber: i },
-            },
-          }),
-        );
-      }
-    }
+  if (mimeType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf")) {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const pages = await parsePdfBuffer(buffer);
 
     if (pages.length === 0) {
-      throw new Error(
-        "No readable text found in the PDF. It may be a scanned image-only PDF.",
-      );
+      throw new Error("No readable text found in the PDF. It may be a scanned image-only PDF.");
     }
 
-    return pages;
+    return pages.map(
+      (page) =>
+        new Document({
+          pageContent: page.pageContent,
+          metadata: { ...page.metadata, source: fileName }
+        })
+    );
   }
 
   throw new Error("Unsupported file type. Upload a PDF or .txt file.");
@@ -137,7 +132,7 @@ export async function parseUploadedFile(file: File) {
 export async function chunkDocuments(documents: Document[]) {
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: CHUNK_SIZE,
-    chunkOverlap: CHUNK_OVERLAP,
+    chunkOverlap: CHUNK_OVERLAP
   });
 
   const chunks = await splitter.splitDocuments(documents);
@@ -151,9 +146,9 @@ export async function chunkDocuments(documents: Document[]) {
           metadata: {
             ...chunk.metadata,
             chunk: index + 1,
-            chunking: `recursive-character-${CHUNK_SIZE}-${CHUNK_OVERLAP}`,
-          },
-        }),
+            chunking: `recursive-character-${CHUNK_SIZE}-${CHUNK_OVERLAP}`
+          }
+        })
     );
 }
 
@@ -168,20 +163,17 @@ export async function indexChunks(collectionName: string, chunks: Document[]) {
   await QdrantVectorStore.fromDocuments(chunks, embeddings, {
     url: config.url,
     apiKey: config.apiKey,
-    collectionName,
+    collectionName
   });
 }
 
 export async function retrieveChunks(collectionName: string, question: string) {
   const config = getQdrantConfig();
-  const vectorStore = await QdrantVectorStore.fromExistingCollection(
-    getEmbeddings(),
-    {
-      url: config.url,
-      apiKey: config.apiKey,
-      collectionName,
-    },
-  );
+  const vectorStore = await QdrantVectorStore.fromExistingCollection(getEmbeddings(), {
+    url: config.url,
+    apiKey: config.apiKey,
+    collectionName
+  });
 
   return vectorStore.similaritySearch(question, 5);
 }
@@ -189,11 +181,8 @@ export async function retrieveChunks(collectionName: string, question: string) {
 export function formatSources(chunks: Document[]): SourceChunk[] {
   return chunks.map((chunk, index) => ({
     chunk: Number(chunk.metadata.chunk || index + 1),
-    page:
-      Number(
-        chunk.metadata.loc?.pageNumber || chunk.metadata.pdf?.pageNumber || 0,
-      ) || undefined,
-    text: chunk.pageContent.replace(/\s+/g, " ").slice(0, 420),
+    page: Number(chunk.metadata.loc?.pageNumber || chunk.metadata.pdf?.pageNumber || 0) || undefined,
+    text: chunk.pageContent.replace(/\s+/g, " ").slice(0, 420)
   }));
 }
 
@@ -201,8 +190,7 @@ export function buildGroundedPrompt(chunks: Document[]) {
   const context = chunks
     .map((chunk, index) => {
       const chunkNumber = chunk.metadata.chunk || index + 1;
-      const page =
-        chunk.metadata.loc?.pageNumber || chunk.metadata.pdf?.pageNumber;
+      const page = chunk.metadata.loc?.pageNumber || chunk.metadata.pdf?.pageNumber;
       return `SOURCE ${index + 1} | chunk ${chunkNumber}${page ? ` | page ${page}` : ""}\n${chunk.pageContent}`;
     })
     .join("\n\n---\n\n");
@@ -221,19 +209,14 @@ Sources:
 ${context}`;
 }
 
-export async function generateGroundedAnswer(
-  chunks: Document[],
-  question: string,
-) {
+export async function generateGroundedAnswer(chunks: Document[], question: string) {
   const model = getChatModel();
   const response = await model.invoke([
     new SystemMessage(buildGroundedPrompt(chunks)),
-    new HumanMessage(question),
+    new HumanMessage(question)
   ]);
 
   return typeof response.content === "string"
     ? response.content
-    : response.content
-        .map((part) => ("text" in part ? part.text : ""))
-        .join("");
+    : response.content.map((part) => ("text" in part ? part.text : "")).join("");
 }
