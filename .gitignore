@@ -6,3 +6,11 @@ qdrant_storage
 *.log
 .vercel
 .env.example
+ARCHITECTURE.md 
+AGENT_HANDOFF.md
+
+
+
+
+
+
