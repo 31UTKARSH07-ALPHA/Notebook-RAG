@@ -566,7 +566,205 @@ export async function retrieveChunks(
   // Step 6: CrossEncoder re-ranking
   const rerankedDocs = await rerank(question, docsToRerank, topK);
 
-  return rerankedDocs;
+  // === Phase 3: Post-retrieval ===
+
+  // Step 7: Relevance grading - filter out irrelevant chunks
+  const relevantDocs = await gradeChunks(question, rerankedDocs, llm);
+
+  // Fallback strategy: if no chunks pass relevance threshold
+  if (relevantDocs.length === 0) {
+    console.log("No relevant chunks found, returning fallback response");
+    // Return a special document indicating no relevant content found
+    return [new Document({
+      pageContent: "I could not find that in the uploaded document.",
+      metadata: { fallback: true }
+    })];
+  }
+
+  // Step 8: Context compression - extract only relevant sentences
+  const compressedDocs = await compressContext(question, relevantDocs, llm);
+
+  return compressedDocs;
+}
+
+// RAG Fusion - combines results from multiple query variants using RRF
+// This is the public API wrapper that uses retrieveChunks internally
+export async function ragFusion(question: string): Promise<Document[]> {
+  const client = getQdrantClient();
+  const collections = await client.getCollections();
+  
+  if (collections.collections.length === 0) {
+    throw new Error("No collections found. Please upload a document first.");
+  }
+  
+  // Use the first available collection
+  const collectionName = collections.collections[0].name;
+  return retrieveChunks(collectionName, question);
+}
+
+// === Phase 3 Functions ===
+
+// 3a. Relevance grader - LLM scores each retrieved chunk
+export async function gradeChunks(
+  question: string,
+  docs: Document[],
+  llm?: ChatGroq
+): Promise<Document[]> {
+  const model = llm || getChatModel();
+  
+  let prompt = `You are a relevance grader for a RAG system. 
+Given a question and a document chunk, determine if the chunk is relevant to answering the question.
+
+Question: "${question}"
+
+For each chunk below, output "RELEVANT" or "NOT_RELEVANT" followed by a confidence score (0.0-1.0).
+
+Format your response as JSON:
+[
+  {"index": 0, "label": "RELEVANT|NOT_RELEVANT", "confidence": 0.95},
+  {"index": 1, "label": "RELEVANT|NOT_RELEVANT", "confidence": 0.72},
+  ...
+]
+
+Document chunks:
+`;
+
+  // Add each chunk with its index
+  docs.forEach((doc, i) => {
+    prompt += `\n\n--- Chunk ${i} ---\n${doc.pageContent}\n--- End Chunk ${i} ---\n`;
+  });
+
+  prompt += `\n\nOutput JSON:`;
+
+  try {
+    const response = await model.invoke([new HumanMessage(prompt)]);
+    const content = typeof response.content === "string" 
+      ? response.content 
+      : response.content.map((part: any) => "text" in part ? part.text : "").join("");
+
+    // Parse JSON response
+    let scores: Array<{index: number; label: string; confidence: number}> = [];
+    
+    // Try to find JSON in the response
+    const jsonMatch = content.match(/\[\s*\{[\s\S]*\}\s*\]/);
+    if (jsonMatch) {
+      try {
+        scores = JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.error("Failed to parse grade chunks JSON:", e);
+      }
+    }
+
+    // Filter docs based on relevance
+    return docs.filter((doc, i) => {
+      const score = scores.find(s => s.index === i);
+      if (!score) return true; // Default to keeping if parsing failed
+      return score.label === "RELEVANT" && score.confidence >= 0.5;
+    });
+  } catch (error) {
+    console.error("Error grading chunks:", error);
+    // Fallback: keep all chunks if grading fails
+    return docs;
+  }
+}
+
+// 3c. Context compression - extract only relevant sentences from each chunk
+export async function compressContext(
+  question: string,
+  docs: Document[],
+  llm?: ChatGroq
+): Promise<Document[]> {
+  const model = llm || getChatModel();
+  
+  const prompt = `You are a context compressor for a RAG system.
+Given a question and a document chunk, extract only the sentences that are relevant to answering the question.
+
+Question: "${question}"
+
+For each chunk below, output only the relevant sentences, combined into a single concise paragraph.
+If no sentences are relevant, output "No relevant content found."
+
+Chunk to compress:
+`;
+
+  const compressedDocs: Document[] = [];
+
+  for (const doc of docs) {
+    try {
+      const chunkPrompt = prompt + `\n\n--- CHUNK START ---\n${doc.pageContent}\n--- CHUNK END ---\n\nOutput compressed context:`;
+      
+      const response = await model.invoke([new HumanMessage(chunkPrompt)]);
+      const content = typeof response.content === "string"
+        ? response.content
+        : response.content.map((part: any) => "text" in part ? part.text : "").join("");
+
+      compressedDocs.push(
+        new Document({
+          pageContent: content,
+          metadata: {
+            ...doc.metadata,
+            compressed: true,
+            originalLength: doc.pageContent.length,
+          },
+        })
+      );
+    } catch (error) {
+      console.error(`Error compressing chunk:`, error);
+      compressedDocs.push(doc); // Keep original if compression fails
+    }
+  }
+
+  return compressedDocs;
+}
+
+// 3d. Hallucination grader - check if answer is grounded in chunks
+export async function gradeAnswer(
+  answer: string,
+  docs: Document[],
+  question: string,
+  llm?: ChatGroq
+): Promise<{ grounded: boolean; confidence: number; reasoning: string }> {
+  const model = llm || getChatModel();
+  
+  let prompt = `You are a hallucination grader for a RAG system.
+Given a question, an answer, and the source chunks used to generate the answer, determine if the answer is fully grounded in the provided sources.
+
+Question: "${question}"
+
+Answer to evaluate: "${answer}"
+
+Source chunks:
+`;
+
+  docs.forEach((doc, i) => {
+    prompt += `\n\n--- Source ${i + 1} ---\n${doc.pageContent}\n--- End Source ${i + 1} ---\n`;
+  });
+
+  prompt += `\n\nIs the answer fully grounded in the sources? Answer with JSON:
+{"grounded": true|false, "confidence": 0.0-1.0, "reasoning": "brief explanation"}`;
+
+  try {
+    const response = await model.invoke([new HumanMessage(prompt)]);
+    const content = typeof response.content === "string"
+      ? response.content
+      : response.content.map((part: any) => "text" in part ? part.text : "").join("");
+
+    // Extract JSON
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.error("Failed to parse grade answer JSON:", e);
+      }
+    }
+
+    // Default response if parsing fails
+    return { grounded: true, confidence: 0.5, reasoning: "Could not verify" };
+  } catch (error) {
+    console.error("Error grading answer:", error);
+    return { grounded: true, confidence: 0.0, reasoning: "Error during evaluation" };
+  }
 }
 
 //  Answer generation
