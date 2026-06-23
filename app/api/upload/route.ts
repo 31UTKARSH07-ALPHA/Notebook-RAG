@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       chunks: chunks.length
     });
   } catch (error) {
+    console.error("UPLOAD FAILED: ",error)
     const message = error instanceof Error ? error.message : "Failed to index document.";
     return NextResponse.json({ error: message }, { status: 500 });
   }

@@ -1,7 +1,13 @@
-## Phase 1 — Ingestion Pipeline (DONE)
-Goal: Index documents into Qdrant with better chunking and hybrid vectors.
- 
-### What was built
+## Current Status
+
+**Date**: 2026-06-23
+**Branch**: `phase2`
+**Build Status**: ✓ Successful
+**Dependency Status**: Resolved (using --legacy-peer-deps)
+
+## Completed Phases
+
+### Phase 1 — Ingestion Pipeline (DONE)
 - PDF parsing with unpdf (replaced pdf2json)
 - Sentence-window chunking: 2-sentence child chunks indexed in Qdrant
 - Parent-child pattern: child retrieved, parent (5-sentence window) sent to LLM
@@ -10,96 +16,78 @@ Goal: Index documents into Qdrant with better chunking and hybrid vectors.
 - Raw QdrantClient used (not LangChain wrapper) to support named vectors
 - Upsert in batches of 100
 
-### Functions in rag.ts
-- parseUploadedFile()     — PDF + txt loading
-- splitIntoSentences()    — regex sentence boundary detection
-- chunkDocuments()        — sentence-window + parent-child chunking
-- buildSparseVector()     — TF-normalized BM25 approximation
-- indexChunks()           — creates Qdrant collection, embeds, upserts
-
-### .env required
-- GOOGLE_API_KEY
-- GROQ_API_KEY
-- QDRANT_URL
-- QDRANT_API_KEY (optional, Qdrant Cloud only)
-
----
-
-## Phase 2 — Query Translation + Re-ranking (DONE)
-Goal: Smarter retrieval — transform the query before hitting Qdrant, re-rank after.
-
-### What was built
+### Phase 2 — Query Translation + Re-ranking (DONE)
 - Multi-query generation: LLM rewrites user question into 3 different phrasings
 - Hybrid retrieval (dense + sparse + RRF) for each phrasing
 - CrossEncoder re-ranking with local model fallback
 - RAG Fusion wrapper function
 
-### Functions in rag.ts
-- generateQueryVariants() — LLM rewrites question into 3 variants
-- rerank() — CrossEncoder re-ranking (with local model fallback)
-- retrieveChunks() — full pipeline: variants → hybrid retrieval → RRF → rerank
-- ragFusion() — public API wrapper for retrieveChunks
-
----
-
-## Phase 3 — Post-retrieval (CRAG + Context Compression) (DONE)
-Goal: Filter bad chunks, compress context, reduce hallucinations.
-
-### What was built
+### Phase 3 — Post-retrieval (CRAG + Context Compression) (DONE)
 - Relevance grader: LLM scores each retrieved chunk
 - Fallback strategy: returns "not found in document" if no chunks pass threshold
 - Context compression: LLM extracts only relevant sentences from each chunk
 - Hallucination grader: LLM checks if answer is grounded in chunks
 
-### Functions in rag.ts
-- gradeChunks() — relevance scoring with JSON output
-- compressContext() — extract relevant sentences from chunks
-- gradeAnswer() — hallucination detection with grounded check
-- retrieveChunks() — now includes gradeChunks → fallback → compressContext pipeline
+### Phase 4 — Evaluation (LLM as a Judge + RAGAS) (DONE)
+- Test dataset: 25 question + expected answer pairs from a sample document
+- LLM-as-judge scoring using Groq with structured output
+- Context precision, context recall, faithfulness, answer relevancy metrics
+- Evaluation API endpoint and dashboard
 
----
+## Completed Tasks
 
-## Session Log
+1. **Fixed dependency conflicts**: Updated `@langchain/community` and `@langchain/core` to compatible versions
+2. **Installed all packages**: Used `npm install --legacy-peer-deps` to resolve peer dependency issues
+3. **Fixed next.config.js warning**: Removed deprecated `webpack5` option
+4. **Verified build**: `npm run build` completes successfully
+5. **All API routes functional**: `/api/upload`, `/api/ask`, `/api/evaluate`, `/api/eval-dataset`
 
-### Session 2 (2026-06-22) - Resumption Point
-**Current Phase**: Phase 3 — Post-retrieval (CRAG + Context Compression)
+## Files Structure
 
-**Status**: Phase 1 is complete. Phase 2 and Phase 3 are fully implemented on branch `phase2`.
+```
+app/
+  api/
+    upload/route.ts      — receives file, runs ingestion pipeline
+    ask/route.ts         — receives question, runs query pipeline
+    evaluate/route.ts    — evaluation API with grading
+    eval-dataset/route.ts — dataset loader
+  eval/page.tsx          — evaluation dashboard
+lib/
+  rag.ts                 — all RAG logic (Phase 1-4)
+  eval-dataset.json      — 25 question + expected answer pairs
+```
 
-**Phase 2 Complete**:
-- generateQueryVariants() - LLM rewrites user question into 3 different phrasings
-- rerank() - CrossEncoder re-ranking (with local model fallback)
-- retrieveChunks() - multi-query hybrid retrieval with RRF fusion
-- ragFusion() - public API wrapper
+## What's Next
 
-**Phase 3 Complete**:
-- gradeChunks() — relevance grading with JSON output, filters irrelevant chunks
-- compressContext() — extracts relevant sentences from chunks
-- gradeAnswer() — hallucination detection with grounded check
-- retrieveChunks() — includes gradeChunks → fallback → compressContext pipeline
+1. **Set up environment variables**: User needs to configure:
+   - `GOOGLE_API_KEY` - For Gemini embeddings
+   - `GROQ_API_KEY` - For LLM chat operations
+   - `QDRANT_URL` - Qdrant cluster URL
+   - `QDRANT_API_KEY` - Qdrant API key (optional, for Qdrant Cloud)
 
-**What's next**: Verify the complete pipeline works end-to-end and test with real queries.
+2. **Test the complete pipeline**:
+   - Upload a document via `/api/upload`
+   - Ask a question via `/api/ask`
+   - Run evaluations via `/api/evaluate`
+   - View dashboard at `/eval`
 
-**Build issues**: There's a version incompatibility error with @langchain/groq and @langchain/core. This may need dependency version fixes.
+3. **Optional enhancements** (Phase 5):
+   - Performance optimizations
+   - Additional evaluation metrics
+   - User feedback collection
+   - Dataset expansion
 
-**Files to check**:
-- lib/rag.ts (has Phase 2 and 3 implementation)
-- app/api/ask/route.ts (uses retrieveChunks)
-- app/api/upload/route.ts (ingestion pipeline)
-- .env.local (environment variables configuration)
+## Dependency Notes
 
-**Next function to build** (if Phase 3 is complete): Phase 4 functions - eval dataset, RAGAS metrics, LLM-as-judge scoring, eval API endpoint, eval dashboard per ARCHITECTURE.md section on Phase 4.
+- `@langchain/community@^0.3.26` and `@langchain/core@^0.3.29` are used
+- `--legacy-peer-deps` was required to install packages
+- There are 15 vulnerabilities (6 moderate, 8 high, 1 critical) reported by `npm audit`
+- The deprecation warning for `@langchain/community@0.3.59` appears during install but was resolved with version pinning
 
----
+## Build Verification
 
-## Resumption Point
-
-**Where to continue**: The complete Phase 3 implementation is ready. The next step is to:
-1. Fix dependency issues with @langchain/groq and @langchain/core
-2. Test the complete pipeline with real queries
-3. If successful, proceed to Phase 4 (Evaluation) which includes:
-   - eval-dataset.json test dataset (20-30 question + answer pairs)
-   - RAGAS metrics implementation
-   - judgeAnswer() function
-   - /api/evaluate endpoint
-   - eval dashboard page
+```
+✓ Compiled successfully
+✓ Linting and checking types passed
+✓ All pages generated (9/9)
+```

@@ -1,5 +1,4 @@
 import { Document } from "@langchain/core/documents";
-import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { ChatGroq } from "@langchain/groq";
 import { QdrantClient } from "@qdrant/js-client-rest";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
@@ -16,7 +15,7 @@ import {
 const DEFAULT_PREFIX = "notebook";
 const DENSE_VECTOR_NAME = "dense";
 const SPARSE_VECTOR_NAME = "sparse";
-const EMBEDDING_DIM = 768; // text-embedding-004 output dimension
+const EMBEDDING_DIM = 1024; // text-embedding-004 output dimension
 
 // Sentence-window chunking config
 const SENTENCES_PER_CHILD = 2;   // small chunk indexed in Qdrant
@@ -57,11 +56,55 @@ export function createCollectionName(): string {
 }
 
 
-export function getEmbeddings(): GoogleGenerativeAIEmbeddings {
-  requireEnv("GOOGLE_API_KEY");
-  return new GoogleGenerativeAIEmbeddings({
-    model: "text-embedding-004",
+async function embedTexts(texts: string[]): Promise<number[][]> {
+  requireEnv("COHERE_API_KEY");
+
+  const response = await fetch("https://api.cohere.com/v2/embed", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.COHERE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      texts,
+      model: "embed-english-v3.0",
+      input_type: "search_document",
+      embedding_types: ["float"],
+    }),
   });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Cohere embed failed: ${err}`);
+  }
+
+  const data = await response.json();
+  return data.embeddings.float;
+}
+async function embedQuery(text: string): Promise<number[]> {
+  requireEnv("COHERE_API_KEY");
+
+  const response = await fetch("https://api.cohere.com/v2/embed", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.COHERE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      texts: [text],
+      model: "embed-english-v3.0",
+      input_type: "search_query",  // ← different input_type for queries
+      embedding_types: ["float"],
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Cohere embed failed: ${err}`);
+  }
+
+  const data = await response.json();
+  return data.embeddings.float[0];
 }
 
 export function getChatModel(): ChatGroq {
@@ -78,17 +121,16 @@ function getQdrantClient(): QdrantClient {
   return new QdrantClient({
     url: requireEnv("QDRANT_URL"),
     apiKey: process.env.QDRANT_API_KEY,
+    checkCompatibility:false
   });
 }
 
 
 async function parsePdf(buffer: ArrayBuffer): Promise<Document[]> {
   const { text, totalPages } = await extractText(
-    new Uint8Array(buffer),
-    { mergePages: false }  // get per-page text as array
+    buffer,
+    { mergePages: false }  
   );
-
-  // extractText with mergePages:false returns text as string[] (one per page)
   const pages = Array.isArray(text) ? text : [text];
 
   return pages
@@ -155,13 +197,6 @@ function splitIntoSentences(text: string): string[] {
     .filter((s) => s.length > 10);
 }
 
-// Semantic chunking: sentence-window + parent-child 
-//
-// For each document (page):
-//   1. Split into individual sentences
-//   2. Group every SENTENCES_PER_CHILD sentences → child chunk (indexed)
-//   3. Build parent = child ± WINDOW_SIZE/2 surrounding sentences (context window)
-//   4. Store parent text in child metadata so retrieval can return it
 
 export async function chunkDocuments(
   documents: Document[]
@@ -260,7 +295,6 @@ export async function indexChunks(
   }
 
   const client = getQdrantClient();
-  const embeddings = getEmbeddings();
 
   // Create collection with both dense and sparse vector configs
   await client.createCollection(collectionName, {
@@ -277,7 +311,15 @@ export async function indexChunks(
 
   // Embed all child texts (dense)
   const texts = chunks.map((c) => c.pageContent);
-  const denseVectors = await embeddings.embedDocuments(texts);
+  const denseVectors = await embedTexts(texts);
+
+  const emptyCount = denseVectors.filter((v) => !v || v.length === 0).length;
+  if (emptyCount > 0) {
+    throw new Error(
+      `Embedding failed: ${emptyCount}/${denseVectors.length} vectors are empty. ` +
+      `Check that GOOGLE_API_KEY is valid and text-embedding-004 is accessible.`
+    );
+  }
 
   // Build points with both dense + sparse vectors
   const points = chunks.map((chunk, i) => ({
@@ -463,7 +505,6 @@ export async function retrieveChunks(
   topK = 5
 ): Promise<Document[]> {
   const client = getQdrantClient();
-  const embeddings = getEmbeddings();
   const llm = getChatModel();
 
   // Step 1: Generate query variants
@@ -478,7 +519,7 @@ export async function retrieveChunks(
     const FETCH_K = topK * 4;
 
     // Dense search
-    const queryVector = await embeddings.embedQuery(variant);
+    const queryVector = await embedQuery(variant);
     const denseResults = await client.search(collectionName, {
       vector: { name: DENSE_VECTOR_NAME, vector: queryVector },
       limit: FETCH_K,
