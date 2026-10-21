@@ -16,10 +16,15 @@ import { HumanMessage } from "@langchain/core/messages";
 import { ChatGroq } from "@langchain/groq";
 import {
   ChunkingStrategy,
+  DEFAULT_EMBEDDING,
+  EmbeddingConfig,
   KeyValueCache,
   addContextHeaders,
   chunkDocuments,
   deleteCollection,
+  formatEmbedding,
+  getCollectionEmbedding,
+  getEmbeddingConfig,
   getQdrantClient,
   indexChunks,
   parseUploadedFile,
@@ -129,17 +134,31 @@ export async function loadChunks(
   return chunks;
 }
 
-// e.g. "sentence-window" or "sentence-window+headers"; used in file and collection names
-export function indexVariant(chunking: ChunkingStrategy, contextHeaders: boolean): string {
-  return contextHeaders ? `${chunking}+headers` : chunking;
+// e.g. "sentence-window", "sentence-window+headers" or
+// "sentence-window+embed-v4.0@512"; used in file and collection names. The
+// default embedding model adds no suffix, so baseline names stay as they were.
+export function indexVariant(
+  chunking: ChunkingStrategy,
+  contextHeaders: boolean,
+  embedding: EmbeddingConfig = DEFAULT_EMBEDDING
+): string {
+  let variant: string = chunking;
+  if (contextHeaders) variant += "+headers";
+  if (formatEmbedding(embedding) !== formatEmbedding(DEFAULT_EMBEDDING)) {
+    variant += `+${formatEmbedding(embedding)}`;
+  }
+  return variant;
 }
 
+// Qdrant names are kept to [A-Za-z0-9_] ("embed-v4.0@512" -> "embed_v4_0_512")
 export function evalCollectionName(docId: string, variant: string): string {
   const prefix = process.env.QDRANT_COLLECTION_PREFIX || "sourcesage";
-  return `${prefix}_eval_${docId}_${variant}`.replace(/[-+]/g, "_");
+  return `${prefix}_eval_${docId}_${variant}`.replace(/[^A-Za-z0-9_]/g, "_");
 }
 
-// Reuses an existing collection when it already holds exactly these chunks
+// Reuses an existing collection when it already holds exactly these chunks.
+// indexChunks() builds new collections with getEmbeddingConfig(), which the
+// harness sets from --embedding.
 export async function ensureIndexed(
   doc: EvalDocument,
   variant: string,
@@ -149,9 +168,11 @@ export async function ensureIndexed(
   const client = getQdrantClient();
   const { exists } = await client.collectionExists(name);
 
+  // Reused only if it also holds vectors from the model being evaluated
   if (exists) {
     const { count } = await client.count(name, { exact: true });
-    if (count === chunks.length) return name;
+    const built = formatEmbedding(await getCollectionEmbedding(name));
+    if (count === chunks.length && built === formatEmbedding(getEmbeddingConfig())) return name;
     await deleteCollection(name);
   }
 
