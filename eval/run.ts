@@ -57,6 +57,9 @@ const RETRIEVAL_CONFIGS: Record<string, PipelineOptions> = {
   "hybrid+multiquery": { ...RETRIEVAL_BASE, search: "hybrid", multiQuery: true, rerank: false },
   "hybrid+rerank": { ...RETRIEVAL_BASE, search: "hybrid", multiQuery: false, rerank: true },
   "hybrid+multiquery+rerank": { ...RETRIEVAL_BASE, search: "hybrid", multiQuery: true, rerank: true },
+  // Decomposition targets multi-hop recall; rewrites only apply to questions it leaves whole
+  "hybrid+rerank+decompose": { ...RETRIEVAL_BASE, search: "hybrid", multiQuery: false, rerank: true, decompose: true },
+  "hybrid+multiquery+rerank+decompose": { ...RETRIEVAL_BASE, search: "hybrid", multiQuery: true, rerank: true, decompose: true },
 };
 
 const GENERATION_CONFIGS: Record<string, PipelineOptions> = {
@@ -64,6 +67,7 @@ const GENERATION_CONFIGS: Record<string, PipelineOptions> = {
   naive: {
     search: "dense",
     multiQuery: false,
+    decompose: false,
     rerank: false,
     grade: false,
     compress: false,
@@ -79,12 +83,13 @@ const GENERATION_CONFIGS: Record<string, PipelineOptions> = {
     groundingCheck: false,
   },
   full: DEFAULT_PIPELINE,
+  "full+decompose": { ...DEFAULT_PIPELINE, decompose: true },
 };
 
 // Seconds to wait between questions in the latency suite so Groq's free-tier
 // token-per-minute limit is never hit; otherwise retry back-off would be
 // measured as pipeline latency.
-const LATENCY_PAUSE_S: Record<string, number> = { naive: 10, "hybrid+rerank": 10, full: 60 };
+const LATENCY_PAUSE_S: Record<string, number> = { naive: 10, "hybrid+rerank": 10, full: 60, "full+decompose": 60 };
 
 type Args = {
   suite: string;
