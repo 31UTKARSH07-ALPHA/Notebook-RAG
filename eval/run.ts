@@ -169,9 +169,16 @@ function byType<T>(rows: Array<T & { type: QuestionType }>, metric: (rows: T[]) 
   return result;
 }
 
-function save(name: string, data: unknown) {
+// Running a subset with --configs must not throw away the other configs'
+// results, so configs are merged into the existing file for the same suite.
+function save(name: string, data: { configs?: Record<string, unknown>; [key: string]: unknown }) {
   mkdirSync(RESULTS_DIR, { recursive: true });
-  writeFileSync(join(RESULTS_DIR, `${name}.json`), JSON.stringify(data, null, 2));
+  const path = join(RESULTS_DIR, `${name}.json`);
+  const previous = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null;
+  const merged = previous?.configs
+    ? { ...data, configs: { ...previous.configs, ...data.configs } }
+    : data;
+  writeFileSync(path, JSON.stringify(merged, null, 2));
 }
 
 function useEvalRuntime(cached: boolean) {
