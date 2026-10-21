@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  formatSources,
-  generateGroundedAnswer,
-  retrieveChunks,
-} from "@/lib/rag";
+import { answerQuestion } from "@/lib/rag";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -26,14 +22,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const chunks = await retrieveChunks(collectionName, question);
-    const answer = await generateGroundedAnswer(chunks, question);
-
-    return NextResponse.json({
-      answer: answer || "I could not find that in the uploaded document.",
-      sources: formatSources(chunks),
-    });
+    return NextResponse.json(await answerQuestion(collectionName, question));
   } catch (error) {
+    console.error("ASK FAILED: ", error);
     const message =
       error instanceof Error ? error.message : "Failed to answer question.";
     return NextResponse.json({ error: message }, { status: 500 });
