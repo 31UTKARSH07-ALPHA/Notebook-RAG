@@ -24,11 +24,11 @@ const HEADER_PAGE_CHARS = 6000; // page text sent when writing a context header
 // Sentence-window chunking config
 const SENTENCES_PER_CHILD = 2; // small chunk indexed in Qdrant
 const CONTEXT_SENTENCES = 2; // sentences added on each side to build the parent sent to the LLM
-const MAX_SENTENCE_CHARS = 500; // longer "sentences" (tables, unpunctuated text) get split on words
+export const MAX_SENTENCE_CHARS = 500; // longer "sentences" (tables, unpunctuated text) get split on words
 
 // Fixed-size chunking (the project's original strategy), kept for comparison
-const FIXED_CHUNK_CHARS = 1000;
-const FIXED_OVERLAP_CHARS = 200;
+export const FIXED_CHUNK_CHARS = 1000;
+export const FIXED_OVERLAP_CHARS = 200;
 
 export type ChunkingStrategy = "sentence-window" | "fixed";
 
@@ -113,7 +113,7 @@ function handleStageFailure(stage: string, error: unknown): void {
   console.error(`${stage} failed, using fallback:`, error);
 }
 
-type SparseVector = {
+export type SparseVector = {
   indices: number[];
   values: number[];
 };
@@ -232,6 +232,17 @@ export function getQdrantClient(): QdrantClient {
 
 // Parsing
 
+// Collapses whitespace and rejoins words hyphenated at line breaks
+// ("abil- ity" -> "ability"). Real compounds ("long-context") have no space
+// after the hyphen, and "best- and worst-case" is a suspended hyphen, so
+// and/or/to are kept.
+export function cleanPageText(pageText: string): string {
+  return pageText
+    .replace(/\s+/g, " ")
+    .replace(/([a-z])- (?!(?:and|or|to)\b)([a-z])/g, "$1$2")
+    .trim();
+}
+
 async function parsePdf(buffer: ArrayBuffer): Promise<Document[]> {
   const { text, totalPages } = await extractText(
     buffer,
@@ -242,13 +253,7 @@ async function parsePdf(buffer: ArrayBuffer): Promise<Document[]> {
   return pages
     .map((pageText, index) =>
       new Document({
-        // "abil- ity" -> "ability": rejoin words hyphenated at line breaks.
-        // Real compounds ("long-context") have no space after the hyphen, and
-        // "best- and worst-case" is a suspended hyphen, so and/or/to are kept.
-        pageContent: pageText
-          .replace(/\s+/g, " ")
-          .replace(/([a-z])- (?!(?:and|or|to)\b)([a-z])/g, "$1$2")
-          .trim(),
+        pageContent: cleanPageText(pageText),
         metadata: {
           type: "pdf",
           source: "",
@@ -303,7 +308,7 @@ export async function parseUploadedFile(file: File): Promise<Document[]> {
 
 // Splits text without sentence punctuation (tables, lists, headings) into
 // word-bounded pieces so one "sentence" can't swallow a whole page.
-function splitLongSentence(sentence: string): string[] {
+export function splitLongSentence(sentence: string): string[] {
   if (sentence.length <= MAX_SENTENCE_CHARS) return [sentence];
 
   const pieces: string[] = [];
@@ -320,7 +325,7 @@ function splitLongSentence(sentence: string): string[] {
   return pieces;
 }
 
-function splitIntoSentences(text: string): string[] {
+export function splitIntoSentences(text: string): string[] {
   // Split on sentence-ending punctuation followed by whitespace + capital letter
   return text
     .replace(/\s+/g, " ")
@@ -338,6 +343,7 @@ function chunkFixedSize(documents: Document[]): Document[] {
 
   for (const doc of documents) {
     const words = doc.pageContent.replace(/\s+/g, " ").trim().split(" ");
+    if (!words[0]) continue; // empty page: "".split(" ") is [""], which would make an empty chunk
     let start = 0;
     while (start < words.length) {
       let end = start;
@@ -423,7 +429,7 @@ export async function chunkDocuments(
 // The IDF part needs corpus statistics, so the collection is created with
 // modifier "idf" and Qdrant applies IDF at query time from its own counts.
 
-function tokenize(text: string): string[] {
+export function tokenize(text: string): string[] {
   return text
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
@@ -431,7 +437,7 @@ function tokenize(text: string): string[] {
     .filter((t) => t.length > 1);
 }
 
-function hashToken(term: string): number {
+export function hashToken(term: string): number {
   let hash = 0;
   for (let i = 0; i < term.length; i++) {
     hash = (hash * 31 + term.charCodeAt(i)) & 0xfffff;
@@ -450,7 +456,7 @@ function hashedTermCounts(tokens: string[]): Map<number, number> {
   return counts;
 }
 
-function buildDocumentSparseVector(text: string, avgDocLength: number): SparseVector {
+export function buildDocumentSparseVector(text: string, avgDocLength: number): SparseVector {
   const tokens = tokenize(text);
   const lengthNorm = 1 - BM25_B + BM25_B * (tokens.length / avgDocLength);
   const indices: number[] = [];
@@ -464,7 +470,7 @@ function buildDocumentSparseVector(text: string, avgDocLength: number): SparseVe
   return { indices, values };
 }
 
-function buildQuerySparseVector(text: string): SparseVector {
+export function buildQuerySparseVector(text: string): SparseVector {
   const indices = Array.from(hashedTermCounts(tokenize(text)).keys());
   return { indices, values: indices.map(() => 1) };
 }
