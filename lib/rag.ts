@@ -30,7 +30,23 @@ const MAX_SENTENCE_CHARS = 500; // longer "sentences" (tables, unpunctuated text
 const FIXED_CHUNK_CHARS = 1000;
 const FIXED_OVERLAP_CHARS = 200;
 
-export type ChunkingStrategy = "sentence-window" | "fixed";
+// Semantic chunking: cut where consecutive sentences stop being about the
+// same thing, judged by the similarity of their embeddings.
+// Similarities below this percentile of the document's own consecutive-pair
+// similarities count as a topic shift. A per-document percentile instead of a
+// fixed cutoff, because absolute cosine values vary a lot between documents
+// (a policy text that repeats "AI risk" everywhere scores high throughout).
+// At 25%, roughly one sentence gap in four is a candidate cut, which with
+// ~150-character sentences lands near the max size below rather than far under it.
+const SEMANTIC_BREAKPOINT_PERCENTILE = 25;
+// Same ceiling as "fixed", so the comparison is about where chunks are cut,
+// not about chunk size.
+const SEMANTIC_MAX_CHUNK_CHARS = 1000;
+// Below this a similarity drop doesn't cut: a 1-2 sentence fragment has too
+// little context to answer anything on its own.
+const SEMANTIC_MIN_CHUNK_CHARS = 300;
+
+export type ChunkingStrategy = "sentence-window" | "fixed" | "semantic";
 
 // BM25 parameters (standard defaults)
 const BM25_K1 = 1.2;
@@ -370,11 +386,112 @@ function chunkFixedSize(documents: Document[]): Document[] {
   return chunks;
 }
 
+function cosineSimilarity(a: number[], b: number[]): number {
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(normA * normB) || 1);
+}
+
+// Groups consecutive sentences into chunks, starting a new chunk where the
+// embedding similarity between two neighbouring sentences drops below the
+// document's breakpoint threshold, or when the chunk would exceed the max
+// size. Chunks never cross a page, so each keeps one page number. Like
+// "fixed", the chunk that is searched is also what the LLM sees.
+//
+// Cost: every sentence is embedded once at upload, only to find the cut
+// points, and then the chunks are embedded again by indexChunks(). That
+// doubles the embedded text and adds one Cohere call per 96 sentences: for
+// the 48-page NIST PDF, ~7 sentence calls on top of 2 for the chunks.
+async function chunkSemantic(documents: Document[]): Promise<Document[]> {
+  const pages = documents.map((doc) => splitIntoSentences(doc.pageContent));
+  const vectors = await embed(pages.flat(), "search_document");
+
+  // Similarity between each sentence and the next one on the same page
+  let offset = 0;
+  const pageSimilarities = pages.map((sentences) => {
+    const similarities = sentences
+      .slice(1)
+      .map((_, i) => cosineSimilarity(vectors[offset + i], vectors[offset + i + 1]));
+    offset += sentences.length;
+    return similarities;
+  });
+
+  // Threshold from the whole document's distribution, not per page, so a
+  // page that is all one topic isn't forced to cut somewhere anyway
+  const allSimilarities = pageSimilarities.flat().sort((a, b) => a - b);
+  const threshold = allSimilarities.length
+    ? allSimilarities[Math.floor((SEMANTIC_BREAKPOINT_PERCENTILE / 100) * (allSimilarities.length - 1))]
+    : 0;
+
+  const chunks: Document[] = [];
+  let chunkIndex = 1;
+
+  documents.forEach((doc, pageIndex) => {
+    const sentences = pages[pageIndex];
+    const groups: string[][] = [];
+    let current: string[] = [];
+    let length = 0;
+
+    sentences.forEach((sentence, i) => {
+      if (current.length > 0) {
+        const tooLong = length + sentence.length + 1 > SEMANTIC_MAX_CHUNK_CHARS;
+        const topicShift =
+          pageSimilarities[pageIndex][i - 1] < threshold && length >= SEMANTIC_MIN_CHUNK_CHARS;
+        if (tooLong || topicShift) {
+          groups.push(current);
+          current = [];
+          length = 0;
+        }
+      }
+      current.push(sentence);
+      length += sentence.length + (current.length > 1 ? 1 : 0);
+    });
+
+    // A short tail at the end of the page joins the previous chunk when it fits
+    if (current.length > 0) {
+      const previous = groups[groups.length - 1];
+      if (
+        previous &&
+        length < SEMANTIC_MIN_CHUNK_CHARS &&
+        previous.join(" ").length + 1 + length <= SEMANTIC_MAX_CHUNK_CHARS
+      ) {
+        previous.push(...current);
+      } else {
+        groups.push(current);
+      }
+    }
+
+    for (const group of groups) {
+      const text = group.join(" ");
+      chunks.push(
+        new Document({
+          pageContent: text,
+          metadata: {
+            ...doc.metadata,
+            chunk: chunkIndex++,
+            chunking: `semantic-p${SEMANTIC_BREAKPOINT_PERCENTILE}-${SEMANTIC_MIN_CHUNK_CHARS}-${SEMANTIC_MAX_CHUNK_CHARS}`,
+            parentText: text,
+          },
+        })
+      );
+    }
+  });
+
+  return chunks;
+}
+
 export async function chunkDocuments(
   documents: Document[],
   strategy: ChunkingStrategy = "sentence-window"
 ): Promise<Document[]> {
   if (strategy === "fixed") return chunkFixedSize(documents);
+  if (strategy === "semantic") return chunkSemantic(documents);
 
   const allChildren: Document[] = [];
   let globalChunkIndex = 1;

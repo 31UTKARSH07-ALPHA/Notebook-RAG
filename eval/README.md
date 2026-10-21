@@ -59,6 +59,7 @@ Real, uncached end-to-end timings on a fixed subset of questions (every 6th), wi
 ```bash
 npm run eval -- retrieval                      # sentence-window chunking
 npm run eval -- retrieval --chunking=fixed     # the original 1000/200-character chunking
+npm run eval -- retrieval --chunking=semantic  # cut where sentence embeddings change topic (max 1000 chars)
 npm run eval -- generation
 npm run eval -- latency
 npm run eval -- report                         # rebuild RESULTS.md
