@@ -17,6 +17,18 @@ Searched-unit columns score the chunk that was searched; LLM-context columns sco
 | hybrid+rerank | 87.5% | 81.3% | 0.700 | 82.1% | 100.0% | 60.0% | 86.1% | 73.3% | 5582 chars |
 | hybrid+multiquery+rerank | 89.6% | 84.4% | 0.714 | 85.7% | 100.0% | 65.0% | 88.2% | 73.3% | 5665 chars |
 
+## Retrieval: semantic chunking (48 answerable questions)
+
+Chunks: nist-ai-rmf 163, lost-in-the-middle 98.
+
+Searched-unit columns score the chunk that was searched; LLM-context columns score the text the generator receives (the parent window for sentence-window), with its average size.
+
+| Config | Hit@5 | Recall@5 | MRR@5 | Recall factual | Recall keyword | Recall multi-hop | LLM-context recall | LLM-context multi-hop | Context size |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| dense | 87.5% | 81.3% | 0.674 | 82.1% | 100.0% | 60.0% | 81.3% | 60.0% | 3854 chars |
+| hybrid | 95.8% | 91.0% | 0.775 | 92.9% | 100.0% | 76.7% | 91.0% | 76.7% | 3852 chars |
+| hybrid+rerank | 93.8% | 88.9% | 0.882 | 89.3% | 100.0% | 76.7% | 88.9% | 76.7% | 3878 chars |
+
 ## Retrieval: fixed chunking (48 answerable questions)
 
 Chunks: nist-ai-rmf 150, lost-in-the-middle 86.
@@ -25,9 +37,11 @@ Searched-unit columns score the chunk that was searched; LLM-context columns sco
 
 | Config | Hit@5 | Recall@5 | MRR@5 | Recall factual | Recall keyword | Recall multi-hop | LLM-context recall | LLM-context multi-hop | Context size |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| dense | 89.6% | 81.9% | 0.685 | 82.1% | 100.0% | 63.3% | – | – | – |
-| bm25 | 85.4% | 77.4% | 0.674 | 75.0% | 100.0% | 61.7% | – | – | – |
-| hybrid | 97.9% | 93.1% | 0.818 | 96.4% | 100.0% | 76.7% | – | – | – |
-| hybrid+multiquery | 95.8% | 92.0% | 0.803 | 96.4% | 100.0% | 71.7% | – | – | – |
-| hybrid+rerank | 97.9% | 93.1% | 0.864 | 96.4% | 100.0% | 76.7% | – | – | – |
-| hybrid+multiquery+rerank | 97.9% | 93.1% | 0.864 | 96.4% | 100.0% | 76.7% | – | – | – |
+| dense | 89.6% | 81.9% | 0.685 | 82.1% | 100.0% | 63.3% | 81.9% | 63.3% | 4723 chars |
+| bm25 | 85.4% | 77.4% | 0.674 | 75.0% | 100.0% | 61.7% | 77.4% | 61.7% | 4610 chars |
+| hybrid | 97.9% | 93.1% | 0.808 | 96.4% | 100.0% | 76.7% | 93.1% | 76.7% | 4685 chars |
+| hybrid+multiquery | 95.8% | 92.0% | 0.803 | 96.4% | 100.0% | 71.7% | 92.0% | 71.7% | 4685 chars |
+| hybrid+rerank | 97.9% | 93.1% | 0.864 | 96.4% | 100.0% | 76.7% | 93.1% | 76.7% | 4651 chars |
+| hybrid+multiquery+rerank | 97.9% | 93.1% | 0.864 | 96.4% | 100.0% | 76.7% | 93.1% | 76.7% | 4654 chars |
+| hybrid+rerank+decompose | 97.9% | 96.2% | 0.829 | 96.4% | 100.0% | 91.7% | 96.2% | 91.7% | 4651 chars |
+| hybrid+multiquery+rerank+decompose | 97.9% | 96.2% | 0.829 | 96.4% | 100.0% | 91.7% | 96.2% | 91.7% | 4639 chars |

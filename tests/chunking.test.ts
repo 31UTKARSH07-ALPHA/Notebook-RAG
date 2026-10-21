@@ -14,7 +14,7 @@ const sentences = (count: number, pageNumber = 1) =>
 
 describe('chunkDocuments "sentence-window"', () => {
   const s = sentences(7);
-  const chunksPromise = chunkDocuments([page(s.join(" "))]);
+  const chunksPromise = chunkDocuments([page(s.join(" "))], "sentence-window");
 
   it("makes children of 2 sentences, the last one shorter", async () => {
     const chunks = await chunksPromise;
@@ -52,7 +52,7 @@ describe('chunkDocuments "sentence-window"', () => {
   it("numbers chunks continuously across pages and never mixes pages in a window", async () => {
     const p1 = sentences(3, 1);
     const p2 = sentences(4, 2);
-    const chunks = await chunkDocuments([page(p1.join(" "), 1), page(p2.join(" "), 2)]);
+    const chunks = await chunkDocuments([page(p1.join(" "), 1), page(p2.join(" "), 2)], "sentence-window");
 
     expect(chunks.map((c) => c.metadata.chunk)).toEqual([1, 2, 3, 4]);
     expect(chunks.map((c) => c.metadata.loc.pageNumber)).toEqual([1, 1, 2, 2]);
@@ -60,7 +60,7 @@ describe('chunkDocuments "sentence-window"', () => {
   });
 
   it("returns no chunks for an empty page", async () => {
-    expect(await chunkDocuments([page("")])).toEqual([]);
+    expect(await chunkDocuments([page("")], "sentence-window")).toEqual([]);
   });
 });
 
@@ -129,5 +129,12 @@ describe('chunkDocuments "fixed"', () => {
 
     const chunks = await chunkDocuments([page(`before ${huge} after`)], "fixed");
     expect(chunks.map((c) => c.pageContent)).toEqual(["before", huge, "after"]);
+  });
+});
+
+describe("chunkDocuments default", () => {
+  it("uses fixed-size chunking, the strategy the evaluation picked", async () => {
+    const chunks = await chunkDocuments([page("A short page of text that fits in one chunk.")]);
+    expect(chunks[0].metadata.chunking).toBe("fixed-1000-200");
   });
 });

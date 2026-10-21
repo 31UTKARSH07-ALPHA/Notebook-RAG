@@ -16,6 +16,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join } from "path";
 import {
   ChunkingStrategy,
+  DEFAULT_CHUNKING,
   DEFAULT_EMBEDDING,
   DEFAULT_PIPELINE,
   EmbeddingConfig,
@@ -115,7 +116,7 @@ function parseArgs(): Args {
   );
   return {
     suite,
-    chunking: (flags.chunking as ChunkingStrategy) || "sentence-window",
+    chunking: (flags.chunking as ChunkingStrategy) || DEFAULT_CHUNKING,
     contextHeaders: "headers" in flags,
     // Not read from EMBEDDING_MODEL: a run without the flag is always the
     // baseline, whatever .env.local says, so result files stay comparable.

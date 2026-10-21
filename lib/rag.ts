@@ -29,7 +29,9 @@ const SENTENCES_PER_CHILD = 2; // small chunk indexed in Qdrant
 const CONTEXT_SENTENCES = 2; // sentences added on each side to build the parent sent to the LLM
 export const MAX_SENTENCE_CHARS = 500; // longer "sentences" (tables, unpunctuated text) get split on words
 
-// Fixed-size chunking (the project's original strategy), kept for comparison
+// Fixed-size chunking: the default. In the evaluation it retrieved the most
+// evidence of the three strategies, with less context than sentence-window and
+// no extra upload cost (see DECISIONS.md and eval/RESULTS.md).
 export const FIXED_CHUNK_CHARS = 1000;
 export const FIXED_OVERLAP_CHARS = 200;
 
@@ -50,6 +52,7 @@ const SEMANTIC_MAX_CHUNK_CHARS = 1000;
 const SEMANTIC_MIN_CHUNK_CHARS = 300;
 
 export type ChunkingStrategy = "sentence-window" | "fixed" | "semantic";
+export const DEFAULT_CHUNKING: ChunkingStrategy = "fixed";
 
 // Embedding models
 //
@@ -614,7 +617,7 @@ async function chunkSemantic(documents: Document[]): Promise<Document[]> {
 
 export async function chunkDocuments(
   documents: Document[],
-  strategy: ChunkingStrategy = "sentence-window"
+  strategy: ChunkingStrategy = DEFAULT_CHUNKING
 ): Promise<Document[]> {
   if (strategy === "fixed") return chunkFixedSize(documents);
   if (strategy === "semantic") return chunkSemantic(documents);
