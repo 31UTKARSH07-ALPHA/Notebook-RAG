@@ -5,12 +5,7 @@ node_modules
 qdrant_storage
 *.log
 .vercel
-.env.example
-ARCHITECTURE.md 
+.DS_Store
+*.tsbuildinfo
+ARCHITECTURE.md
 AGENT_HANDOFF.md
-
-
-
-
-
-

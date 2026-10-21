@@ -297,3 +297,22 @@ button:disabled {
     max-width: 100%;
   }
 }
+
+.grounding {
+  justify-self: start;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.grounding.grounded {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.grounding.not_grounded {
+  border-color: var(--warning);
+  color: var(--warning);
+}

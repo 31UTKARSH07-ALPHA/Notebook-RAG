@@ -1,86 +1,115 @@
-# Notebook RAG
+# SourceSage
 
-A Google NotebookLM-style RAG application. Upload a PDF or plain text document, index it into Qdrant, and ask questions that are answered only from retrieved document chunks.
+Ask questions about a PDF or text file and get answers that come only from that document, with the source passages shown next to every answer.
 
-## Features
+SourceSage is a NotebookLM-style retrieval-augmented generation (RAG) app. Instead of plain top-k vector search, it uses a multi-stage pipeline: question rewriting, hybrid dense + BM25 search, cross-encoder reranking, relevance filtering, and a grounding check on the final answer.
 
-- Upload a new `.pdf` or `.txt` document from the browser
-- Parse document text on the server
-- Chunk the document with overlap
-- Embed chunks using Gemini `embedding-001`
-- Store and search embeddings in Qdrant
-- Generate grounded answers using Gemini `gemini-1.5-flash`
-- Show retrieved source snippets for every answer
+## How it works
 
-## RAG Pipeline
+```mermaid
+flowchart TD
+    subgraph Ingestion["Upload"]
+        A[PDF / TXT] --> B[Parse pages with unpdf]
+        B --> C[Sentence-window chunking]
+        C --> D[Cohere embeddings<br/>dense, 1024-d]
+        C --> E[BM25 term weights<br/>sparse]
+        D --> F[(Qdrant collection)]
+        E --> F
+    end
 
-1. **Ingestion**: The upload API accepts PDF and text files. PDFs are loaded page-by-page with LangChain's `PDFLoader`; text files are read directly.
-2. **Chunking**: The app uses `RecursiveCharacterTextSplitter` with:
-   - `chunkSize`: `1000`
-   - `chunkOverlap`: `200`
-
-   This strategy keeps chunks small enough for focused retrieval while preserving context across chunk boundaries.
-
-3. **Embedding**: Every chunk is embedded with Gemini `embedding-001`.
-4. **Vector storage**: Chunks and metadata are stored in a Qdrant collection. Each uploaded document gets its own collection, so questions only retrieve from the current document.
-5. **Retrieval**: For each question, the app retrieves the top 5 most similar chunks from Qdrant.
-6. **Generation**: The LLM receives only the retrieved chunks as context and is instructed to say it cannot find the answer if the chunks do not support the answer.
-
-## Tech Stack
-
-- Next.js
-- React
-- LangChain
-- Qdrant
-- Google Gemini
-- TypeScript
-
-## Environment Variables
-
-Create `.env.local` locally or configure these in your deployment:
-
-```bash
-GOOGLE_API_KEY=your-gemini-api-key
-QDRANT_URL=https://your-qdrant-cluster-url
-QDRANT_API_KEY=your-qdrant-api-key
-QDRANT_COLLECTION_PREFIX=notebooklm
+    subgraph Query["Ask"]
+        Q[Question] --> R[LLM rewrites question 3 ways]
+        R --> S[Dense + BM25 search for every query<br/>fused with RRF inside Qdrant]
+        F -.-> S
+        S --> T[Cohere Rerank 3.5<br/>top 20 → top 5]
+        T --> U[LLM relevance grader<br/>drops off-topic chunks]
+        U -->|nothing relevant| NF[“Not found in document”]
+        U --> V[Context compression]
+        V --> W[Grounded answer generation]
+        W --> X{Hallucination grader}
+        X -->|grounded| Y[Answer + sources]
+        X -->|not grounded| W2[Regenerate once with feedback] --> Y
+    end
 ```
 
-For local Qdrant without an API key:
+### Ingestion
 
-```bash
-docker run -p 6333:6333 -v "$(pwd)/qdrant_storage:/qdrant/storage" qdrant/qdrant
+| Step | What it does | Why |
+|---|---|---|
+| Parsing | `unpdf` extracts text page by page; `.txt` is read directly. | Keeps page numbers for citations. |
+| Chunking | **Sentence window.** Each chunk is 2 sentences. It's stored with a wider "parent" window (2 extra sentences on each side). Text with no punctuation (tables, lists) is split on words at 500 characters. | Small chunks give precise matches; the parent window gives the LLM enough context to answer. |
+| Dense vectors | Cohere `embed-english-v3.0` with `input_type: search_document` (queries use `search_query`). Sent in batches of 96, Cohere's request limit. | Cohere v3 is trained asymmetrically, so documents and queries need different input types. |
+| Sparse vectors | **BM25.** The term-frequency part (k1 = 1.2, b = 0.75, normalized by chunk length) is computed at upload. The collection uses Qdrant's `modifier: "idf"`, so Qdrant applies the inverse-document-frequency part at query time. | Embeddings miss exact terms like names, codes and numbers ("extension 4410"); BM25 catches them. |
+| Storage | One Qdrant collection per document, holding both vectors. The previous document's collection is deleted when a new one is uploaded. | No cross-document leakage and no orphaned collections. |
+
+### Query pipeline
+
+1. **Query translation.** The LLM writes 3 rephrasings of the question. The original question is always searched as well, so a bad rewrite can only add candidates.
+2. **Hybrid search + RRF.** Every query is searched against both the dense and the BM25 vectors (up to 8 ranked lists). Qdrant's Query API merges them with Reciprocal Rank Fusion in **one request**.
+3. **Reranking.** The top 20 fused candidates are scored by Cohere `rerank-v3.5`, a cross-encoder that reads the question and the chunk together, and the top 5 are kept. If the rerank API fails, the fusion order is used.
+4. **Relevance grading (corrective RAG).** One LLM call labels each chunk relevant or not. If nothing is relevant, the app answers "not found" without calling the generator, which prevents made-up answers.
+5. **Context compression.** Chunks are compressed in parallel, keeping only the sentences relevant to the question.
+6. **Generation.** Groq `openai/gpt-oss-120b` (configurable with `GROQ_MODEL`) answers using only the numbered sources.
+7. **Grounding check.** A grader LLM checks whether every claim is supported by the sources. If not, the answer is regenerated once with the grader's feedback. The result (grounded / may contain unsupported claims / not found) is shown in the UI.
+
+Each response also returns the queries used and a per-stage latency breakdown (`timingsMs`).
+
+For the reasoning behind each design choice, including what was broken in earlier versions and how it was fixed, see [DECISIONS.md](DECISIONS.md).
+
+## Tech stack
+
+- **App:** Next.js 14 (App Router), React, TypeScript
+- **Vector DB:** Qdrant (named dense + sparse vectors, Query API fusion)
+- **Embeddings and reranking:** Cohere `embed-english-v3.0`, `rerank-v3.5`
+- **LLM:** Groq `openai/gpt-oss-120b` via LangChain
+- **PDF parsing:** unpdf
+
+## Project structure
+
+```
+app/
+  page.tsx              chat UI: upload, ask, sources, grounding badge
+  api/upload/route.ts   parse → chunk → embed → index
+  api/ask/route.ts      runs answerQuestion()
+lib/
+  rag.ts                the whole RAG pipeline
 ```
 
-Then set:
+## Running locally
 
-```bash
-QDRANT_URL=http://localhost:6333
-```
+1. Copy `.env.example` to `.env.local` and fill it in:
 
-## Run Locally
+   ```bash
+   COHERE_API_KEY=your-cohere-api-key
+   GROQ_API_KEY=your-groq-api-key
+   GROQ_MODEL=openai/gpt-oss-120b         # optional
+   QDRANT_URL=http://localhost:6333
+   QDRANT_API_KEY=                      # only needed for Qdrant Cloud
+   QDRANT_COLLECTION_PREFIX=sourcesage
+   ```
 
-```bash
-npm install
-npm run dev
-```
+2. Start Qdrant (version 1.10 or later is required for the IDF modifier and Query API):
 
-Open `http://localhost:3000`.
+   ```bash
+   docker run -p 6333:6333 -v "$(pwd)/qdrant_storage:/qdrant/storage" qdrant/qdrant
+   ```
+
+3. Run the app:
+
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+   Open `http://localhost:3000`.
 
 ## Deployment
 
-Deploy to Vercel and add the environment variables above. Use Qdrant Cloud for the live project link so the deployed app can store and retrieve vectors without local setup.
+Deploy to Vercel with the same environment variables, using Qdrant Cloud for `QDRANT_URL`.
 
-```bash
-npx vercel@latest --prod
-```
+## Limitations and roadmap
 
-## Grounding Behavior
-
-The answer route builds a system prompt from retrieved chunks only. The model is explicitly instructed:
-
-- Do not use outside knowledge
-- Do not invent facts
-- Say it cannot find the answer if the sources do not contain it
-
-The UI also displays source snippets so the answer can be checked against the uploaded document.
+- **Evaluation:** a retrieval benchmark (Recall@k, MRR) and LLM-judge metrics (faithfulness, answer relevancy) over a hand-labeled question set, plus an ablation of each pipeline stage. Not built yet.
+- **Latency:** a question currently makes about 5 LLM calls in sequence. Stage timings are recorded so this can be measured and tuned.
+- One document per notebook; no conversation memory between questions.
+- Scanned (image-only) PDFs aren't supported (no OCR).

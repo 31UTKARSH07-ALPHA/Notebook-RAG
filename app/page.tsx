@@ -7,12 +7,29 @@ type Source = {
   chunk: number;
   page?: number;
   text: string;
+  rerankScore?: number;
+};
+
+type Grounding = {
+  verdict: "grounded" | "not_grounded" | "unverified" | "not_found";
+  confidence: number;
+  reasoning: string;
+  retried: boolean;
 };
 
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   sources?: Source[];
+  grounding?: Grounding;
+  totalMs?: number;
+};
+
+const GROUNDING_LABELS: Record<Grounding["verdict"], string> = {
+  grounded: "Verified against sources",
+  not_grounded: "May contain unsupported claims",
+  unverified: "Grounding check unavailable",
+  not_found: "Not found in document"
 };
 
 type UploadedDocument = {
@@ -47,6 +64,7 @@ export default function Home() {
 
     const body = new FormData();
     body.append("file", file);
+    if (document) body.append("previousCollectionName", document.collectionName);
 
     try {
       const response = await fetch("/api/upload", {
@@ -102,7 +120,9 @@ export default function Home() {
         {
           role: "assistant",
           content: data.answer,
-          sources: data.sources
+          sources: data.sources,
+          grounding: data.grounding,
+          totalMs: data.timingsMs?.total
         }
       ]);
     } catch (err) {
@@ -120,7 +140,7 @@ export default function Home() {
             <BookOpen size={22} />
           </div>
           <div>
-            <h1>Notebook RAG</h1>
+            <h1>SourceSage</h1>
             <p>Ask questions grounded in one uploaded file.</p>
           </div>
         </div>
@@ -146,15 +166,15 @@ export default function Home() {
         <div className="tips" aria-label="Pipeline">
           <div className="tip">
             <strong>Chunking</strong>
-            <p className="section-note">Recursive chunks of 1000 characters with 200 overlap.</p>
+            <p className="section-note">2-sentence chunks are searched; the LLM sees them with 2 sentences of context on each side.</p>
           </div>
           <div className="tip">
-            <strong>Vector database</strong>
-            <p className="section-note">Each upload is embedded and stored in Qdrant.</p>
+            <strong>Retrieval</strong>
+            <p className="section-note">Question rewrites, hybrid dense + BM25 search fused with RRF, then Cohere reranking.</p>
           </div>
           <div className="tip">
             <strong>Grounding</strong>
-            <p className="section-note">The answer prompt only receives retrieved document chunks.</p>
+            <p className="section-note">Irrelevant chunks are filtered out, and every answer is checked against its sources.</p>
           </div>
         </div>
       </aside>
@@ -185,6 +205,16 @@ export default function Home() {
             messages.map((message, index) => (
               <article className={`message ${message.role}`} key={`${message.role}-${index}`}>
                 <div className="bubble">{message.content}</div>
+                {message.grounding ? (
+                  <div
+                    className={`grounding ${message.grounding.verdict}`}
+                    title={message.grounding.reasoning}
+                  >
+                    {GROUNDING_LABELS[message.grounding.verdict]}
+                    {message.grounding.retried ? " · regenerated once" : ""}
+                    {message.totalMs ? ` · ${(message.totalMs / 1000).toFixed(1)}s` : ""}
+                  </div>
+                ) : null}
                 {message.sources?.length ? (
                   <div className="sources">
                     {message.sources.map((source) => (
@@ -192,6 +222,7 @@ export default function Home() {
                         <div className="source-meta">
                           Chunk {source.chunk}
                           {source.page ? ` · page ${source.page}` : ""}
+                          {source.rerankScore !== undefined ? ` · relevance ${source.rerankScore.toFixed(2)}` : ""}
                         </div>
                         {source.text}
                       </div>
