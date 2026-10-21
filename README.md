@@ -73,6 +73,7 @@ app/
   api/ask/route.ts      runs answerQuestion()
 lib/
   rag.ts                the whole RAG pipeline
+tests/                  offline unit tests (vitest)
 ```
 
 ## Running locally
@@ -102,6 +103,21 @@ lib/
    ```
 
    Open `http://localhost:3000`.
+
+## Tests
+
+```bash
+npm test
+```
+
+Runs the unit tests in `tests/` with vitest. They are offline: no API keys, Qdrant or network needed, and they finish in under a second. They cover the deterministic parts of the pipeline:
+
+- **PDF text cleanup:** rejoining words hyphenated at line breaks ("abil- ity" → "ability") while keeping "best- and worst-case" and capitalised text.
+- **Sentence splitting:** sentence boundaries, dropping short fragments, and splitting long unpunctuated text on word boundaries.
+- **Chunking:** sentence-window children and parent windows (clamped at page edges, numbering, metadata), and fixed-size chunks (size limit, ~200-character overlap, full coverage, empty pages, over-long words).
+- **BM25 sparse vectors:** no duplicate indices on hash collisions, term-frequency saturation, length normalisation, query vectors.
+- **Answer helpers:** citation normalisation, "not found" detection, source formatting.
+- **Evaluation metrics** (`eval/lib.ts`): evidence matching (including quotes split across chunk boundaries) and hit / recall / reciprocal rank.
 
 ## Deployment
 
