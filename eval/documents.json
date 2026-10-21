@@ -1,0 +1,18 @@
+[
+  {
+    "id": "nist-ai-rmf",
+    "title": "NIST AI Risk Management Framework (AI RMF 1.0), NIST AI 100-1",
+    "url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf",
+    "sha256": "7576edb531d9848825814ee88e28b1795d3a84b435b4b797d3670eafdc4a89f1",
+    "kind": "government policy framework, 48 pages",
+    "license": "US government work (public domain)"
+  },
+  {
+    "id": "lost-in-the-middle",
+    "title": "Lost in the Middle: How Language Models Use Long Contexts (Liu et al., TACL 2024), arXiv:2307.03172v3",
+    "url": "https://arxiv.org/pdf/2307.03172v3",
+    "sha256": "653b29619eae2ae4b361d7bdcdc06db4bedcb1b0eabe31814036beca8c1af0b1",
+    "kind": "research paper with tables and numeric results, 18 pages",
+    "license": "arXiv non-exclusive license; downloaded at eval time, not redistributed"
+  }
+]

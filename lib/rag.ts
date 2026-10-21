@@ -1,3 +1,4 @@
+import { BaseCache } from "@langchain/core/caches";
 import { Document } from "@langchain/core/documents";
 import { ChatGroq } from "@langchain/groq";
 import { QdrantClient } from "@qdrant/js-client-rest";
@@ -16,11 +17,20 @@ const EMBEDDING_DIM = 1024; // embed-english-v3.0 output dimension
 const EMBED_BATCH_SIZE = 96; // Cohere embed accepts at most 96 texts per request
 const RERANK_MODEL = "rerank-v3.5";
 const DEFAULT_CHAT_MODEL = "openai/gpt-oss-120b";
+// Smaller, faster model for bulk utility work (context headers at upload)
+const DEFAULT_UTILITY_MODEL = "openai/gpt-oss-20b";
+const HEADER_PAGE_CHARS = 6000; // page text sent when writing a context header
 
 // Sentence-window chunking config
 const SENTENCES_PER_CHILD = 2; // small chunk indexed in Qdrant
 const CONTEXT_SENTENCES = 2; // sentences added on each side to build the parent sent to the LLM
 const MAX_SENTENCE_CHARS = 500; // longer "sentences" (tables, unpunctuated text) get split on words
+
+// Fixed-size chunking (the project's original strategy), kept for comparison
+const FIXED_CHUNK_CHARS = 1000;
+const FIXED_OVERLAP_CHARS = 200;
+
+export type ChunkingStrategy = "sentence-window" | "fixed";
 
 // BM25 parameters (standard defaults)
 const BM25_K1 = 1.2;
@@ -33,6 +43,7 @@ const RERANK_CANDIDATES = 20; // fused candidates sent to the reranker
 export const NOT_FOUND_ANSWER = "I could not find that in the uploaded document.";
 
 export type SourceChunk = {
+  fileName?: string;
   chunk: number;
   page?: number;
   text: string;
@@ -52,7 +63,55 @@ export type AnswerResult = {
   grounding: Grounding;
   queries: string[];
   timingsMs: Record<string, number>;
+  context: Document[]; // what the LLM was given (after grading/compression)
+  retrieved: Document[]; // top-K after search and reranking, before grading
 };
+
+export type PipelineOptions = {
+  search: "dense" | "sparse" | "hybrid";
+  multiQuery: boolean; // add LLM rewrites of the question
+  rerank: boolean;
+  grade: boolean; // LLM relevance filter (CRAG)
+  compress: boolean;
+  groundingCheck: boolean; // hallucination grader + one retry
+  topK: number;
+};
+
+export const DEFAULT_PIPELINE: PipelineOptions = {
+  search: "hybrid",
+  multiQuery: true,
+  rerank: true,
+  grade: true,
+  compress: true,
+  groundingCheck: true,
+  topK: 5,
+};
+
+// Process-wide settings. The app uses the defaults; the evaluation harness
+// turns on strict mode (so a failed stage is an error, not a silent fallback
+// that would skew the scores), more retries, and response caches.
+export type KeyValueCache = {
+  get(key: string): Promise<unknown | undefined>;
+  set(key: string, value: unknown): Promise<void>;
+};
+
+type RuntimeConfig = {
+  strict: boolean;
+  maxRetries: number;
+  llmCache?: BaseCache;
+  apiCache?: KeyValueCache;
+};
+
+const runtimeConfig: RuntimeConfig = { strict: false, maxRetries: 2 };
+
+export function configureRuntime(config: Partial<RuntimeConfig>): void {
+  Object.assign(runtimeConfig, config);
+}
+
+function handleStageFailure(stage: string, error: unknown): void {
+  if (runtimeConfig.strict) throw error;
+  console.error(`${stage} failed, using fallback:`, error);
+}
 
 type SparseVector = {
   indices: number[];
@@ -85,21 +144,38 @@ function messageText(content: BaseMessage["content"]): string {
 
 // Cohere (embeddings + rerank)
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Retries rate limits (429) and server errors, honouring Retry-After when sent
 async function cohereRequest(path: string, body: unknown): Promise<any> {
-  const response = await fetch(`https://api.cohere.com/v2/${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${requireEnv("COHERE_API_KEY")}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  const payload = JSON.stringify(body);
+  const cacheKey = `cohere:${path}:${payload}`;
+  const cached = await runtimeConfig.apiCache?.get(cacheKey);
+  if (cached !== undefined) return cached;
 
-  if (!response.ok) {
-    throw new Error(`Cohere ${path} failed (${response.status}): ${await response.text()}`);
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetch(`https://api.cohere.com/v2/${path}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${requireEnv("COHERE_API_KEY")}`,
+        "Content-Type": "application/json",
+      },
+      body: payload,
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      await runtimeConfig.apiCache?.set(cacheKey, data);
+      return data;
+    }
+
+    const retryable = response.status === 429 || response.status >= 500;
+    if (!retryable || attempt >= runtimeConfig.maxRetries) {
+      throw new Error(`Cohere ${path} failed (${response.status}): ${await response.text()}`);
+    }
+    const retryAfter = Number(response.headers.get("retry-after"));
+    await sleep(retryAfter > 0 ? retryAfter * 1000 : Math.min(60_000, 2 ** attempt * 2000));
   }
-
-  return response.json();
 }
 
 // Documents and queries use different input_type values so Cohere embeds them
@@ -123,6 +199,17 @@ async function embed(
   return vectors;
 }
 
+function getUtilityModel(): ChatGroq {
+  requireEnv("GROQ_API_KEY");
+  return new ChatGroq({
+    model: process.env.GROQ_UTILITY_MODEL || DEFAULT_UTILITY_MODEL,
+    temperature: 0,
+    maxTokens: 2048,
+    maxRetries: runtimeConfig.maxRetries,
+    cache: runtimeConfig.llmCache,
+  });
+}
+
 export function getChatModel(): ChatGroq {
   requireEnv("GROQ_API_KEY");
   return new ChatGroq({
@@ -130,10 +217,12 @@ export function getChatModel(): ChatGroq {
     temperature: 0.1,
     // gpt-oss is a reasoning model: its hidden reasoning tokens count against this limit
     maxTokens: 4096,
+    maxRetries: runtimeConfig.maxRetries,
+    cache: runtimeConfig.llmCache,
   });
 }
 
-function getQdrantClient(): QdrantClient {
+export function getQdrantClient(): QdrantClient {
   return new QdrantClient({
     url: requireEnv("QDRANT_URL"),
     apiKey: process.env.QDRANT_API_KEY || undefined,
@@ -153,7 +242,13 @@ async function parsePdf(buffer: ArrayBuffer): Promise<Document[]> {
   return pages
     .map((pageText, index) =>
       new Document({
-        pageContent: pageText.replace(/\s+/g, " ").trim(),
+        // "abil- ity" -> "ability": rejoin words hyphenated at line breaks.
+        // Real compounds ("long-context") have no space after the hyphen, and
+        // "best- and worst-case" is a suspended hyphen, so and/or/to are kept.
+        pageContent: pageText
+          .replace(/\s+/g, " ")
+          .replace(/([a-z])- (?!(?:and|or|to)\b)([a-z])/g, "$1$2")
+          .trim(),
         metadata: {
           type: "pdf",
           source: "",
@@ -235,9 +330,52 @@ function splitIntoSentences(text: string): string[] {
     .flatMap(splitLongSentence);
 }
 
+// ~1000-character chunks with 200 characters of overlap, cut on word
+// boundaries. The chunk that is searched is also what the LLM sees.
+function chunkFixedSize(documents: Document[]): Document[] {
+  const chunks: Document[] = [];
+  let chunkIndex = 1;
+
+  for (const doc of documents) {
+    const words = doc.pageContent.replace(/\s+/g, " ").trim().split(" ");
+    let start = 0;
+    while (start < words.length) {
+      let end = start;
+      let length = 0;
+      while (end < words.length && length + words[end].length + 1 <= FIXED_CHUNK_CHARS) {
+        length += words[end].length + 1;
+        end++;
+      }
+      end = Math.max(end, start + 1); // a single over-long word still advances
+      const text = words.slice(start, end).join(" ");
+      chunks.push(
+        new Document({
+          pageContent: text,
+          metadata: { ...doc.metadata, chunk: chunkIndex++, chunking: "fixed-1000-200", parentText: text },
+        })
+      );
+      if (end >= words.length) break;
+
+      // Step back ~200 characters for the overlap
+      let back = end;
+      let overlap = 0;
+      while (back > start + 1 && overlap < FIXED_OVERLAP_CHARS) {
+        back--;
+        overlap += words[back].length + 1;
+      }
+      start = back;
+    }
+  }
+
+  return chunks;
+}
+
 export async function chunkDocuments(
-  documents: Document[]
+  documents: Document[],
+  strategy: ChunkingStrategy = "sentence-window"
 ): Promise<Document[]> {
+  if (strategy === "fixed") return chunkFixedSize(documents);
+
   const allChildren: Document[] = [];
   let globalChunkIndex = 1;
 
@@ -333,17 +471,8 @@ function buildQuerySparseVector(text: string): SparseVector {
 
 // Indexing
 
-export async function indexChunks(
-  collectionName: string,
-  chunks: Document[]
-): Promise<void> {
-  if (chunks.length === 0) {
-    throw new Error("No readable text was found in the uploaded document.");
-  }
-
-  const client = getQdrantClient();
-
-  await client.createCollection(collectionName, {
+async function createNotebookCollection(collectionName: string): Promise<void> {
+  await getQdrantClient().createCollection(collectionName, {
     vectors: {
       [DENSE_VECTOR_NAME]: {
         size: EMBEDDING_DIM,
@@ -354,8 +483,28 @@ export async function indexChunks(
       [SPARSE_VECTOR_NAME]: { modifier: "idf" },
     },
   });
+}
 
-  const texts = chunks.map((c) => c.pageContent);
+export async function indexChunks(
+  collectionName: string,
+  chunks: Document[]
+): Promise<void> {
+  if (chunks.length === 0) {
+    throw new Error("No readable text was found in the uploaded document.");
+  }
+
+  const client = getQdrantClient();
+
+  // A notebook is one collection; later documents are appended to it
+  const { exists } = await client.collectionExists(collectionName);
+  if (!exists) await createNotebookCollection(collectionName);
+
+
+  // Context headers (if any) are only used for search; the stored text and
+  // what the LLM later sees stay the original chunk.
+  const texts = chunks.map((c) =>
+    c.metadata.contextHeader ? `${c.metadata.contextHeader}\n${c.pageContent}` : c.pageContent
+  );
   const denseVectors = await embed(texts, "search_document");
 
   if (denseVectors.length !== chunks.length || denseVectors.some((v) => !v?.length)) {
@@ -372,7 +521,7 @@ export async function indexChunks(
     id: randomUUID(),
     vector: {
       [DENSE_VECTOR_NAME]: denseVectors[i],
-      [SPARSE_VECTOR_NAME]: buildDocumentSparseVector(chunk.pageContent, avgDocLength),
+      [SPARSE_VECTOR_NAME]: buildDocumentSparseVector(texts[i], avgDocLength),
     },
     payload: {
       pageContent: chunk.pageContent,
@@ -389,14 +538,78 @@ export async function indexChunks(
   }
 }
 
-// Only deletes collections this app created, so a client can't pass an
-// arbitrary name and drop someone else's data.
+// Contextual chunk headers
+//
+// A 2-sentence chunk like "It can be spent on courses and books." doesn't say
+// what "it" is. For each page, a small LLM writes 1-2 sentences placing the
+// page in the document (document name, section, topic), and that header is
+// prepended to the page's chunks before embedding and BM25. This is a
+// page-level version of Anthropic's "contextual retrieval": one call per page
+// instead of one call per chunk with the whole document.
+export async function addContextHeaders(pages: Document[], chunks: Document[]): Promise<void> {
+  const llm = getUtilityModel();
+  const opening = (pages[0]?.pageContent ?? "").split(" ").slice(0, 250).join(" ");
+  const pageKey = (doc: Document) => doc.metadata.loc?.pageNumber ?? 1;
+  const headers = new Map<number, string>();
+
+  // A few pages at a time keeps upload fast without hammering rate limits
+  const CONCURRENCY = 3;
+  for (let i = 0; i < pages.length; i += CONCURRENCY) {
+    await Promise.all(
+      pages.slice(i, i + CONCURRENCY).map(async (page) => {
+        const prompt = `Here is the beginning of a document:
+<opening>
+${opening}
+</opening>
+
+Here is one page of the same document:
+<page>
+${page.pageContent.slice(0, HEADER_PAGE_CHARS)}
+</page>
+
+Write 1-2 sentences that situate this page within the document, to improve search over its passages: name the document, then the section and the topics this page covers, using the document's own key terms. Output only the sentences.`;
+        try {
+          const response = await llm.invoke([new HumanMessage(prompt)]);
+          const header = messageText(response.content).replace(/\s+/g, " ").trim();
+          if (header) headers.set(pageKey(page), header);
+        } catch (error) {
+          handleStageFailure("Context header", error); // chunks just go without a header
+        }
+      })
+    );
+  }
+
+  for (const chunk of chunks) {
+    const header = headers.get(pageKey(chunk));
+    if (header) chunk.metadata.contextHeader = header;
+  }
+}
+
+// Only collections this app created count as notebooks, so a client can't
+// pass an arbitrary name and read or drop someone else's data.
+export function isNotebookCollection(collectionName: string): boolean {
+  return collectionName.startsWith(`${getCollectionPrefix()}_`);
+}
+
 export async function deleteCollection(collectionName: string): Promise<void> {
-  if (!collectionName.startsWith(`${getCollectionPrefix()}_`)) return;
+  if (!isNotebookCollection(collectionName)) return;
   try {
     await getQdrantClient().deleteCollection(collectionName);
   } catch (error) {
     console.warn(`Could not delete collection ${collectionName}:`, error);
+  }
+}
+
+// Removes one document's chunks from a notebook (used when indexing fails midway)
+export async function deleteDocumentChunks(collectionName: string, documentId: string): Promise<void> {
+  if (!isNotebookCollection(collectionName)) return;
+  try {
+    await getQdrantClient().delete(collectionName, {
+      wait: true,
+      filter: { must: [{ key: "metadata.documentId", match: { value: documentId } }] },
+    });
+  } catch (error) {
+    console.warn(`Could not remove document ${documentId} from ${collectionName}:`, error);
   }
 }
 
@@ -427,7 +640,7 @@ Do not include any other text or explanations. Format:
       .filter((line): line is string => Boolean(line))
       .slice(0, 3);
   } catch (error) {
-    console.error("Error generating query variants:", error);
+    handleStageFailure("Query rewriting", error);
     return [];
   }
 }
@@ -463,7 +676,7 @@ export async function rerank(
     );
   } catch (error) {
     // Fusion order is still a reasonable ranking if the reranker is down
-    console.error("Rerank failed, falling back to fusion order:", error);
+    handleStageFailure("Rerank", error);
     return docs.slice(0, topK);
   }
 }
@@ -477,19 +690,25 @@ export async function rerank(
 export async function hybridSearch(
   collectionName: string,
   queries: string[],
-  limit = RERANK_CANDIDATES
+  limit = RERANK_CANDIDATES,
+  mode: PipelineOptions["search"] = "hybrid"
 ): Promise<Document[]> {
-  const queryVectors = await embed(queries, "search_query");
+  const useDense = mode !== "sparse";
+  const useSparse = mode !== "dense";
+  const queryVectors = useDense ? await embed(queries, "search_query") : [];
 
   const prefetch = queries.flatMap((query, i) => {
     const sparse = buildQuerySparseVector(query);
     return [
-      { query: queryVectors[i], using: DENSE_VECTOR_NAME, limit: PREFETCH_LIMIT },
-      ...(sparse.indices.length
+      ...(useDense
+        ? [{ query: queryVectors[i], using: DENSE_VECTOR_NAME, limit: PREFETCH_LIMIT }]
+        : []),
+      ...(useSparse && sparse.indices.length
         ? [{ query: sparse, using: SPARSE_VECTOR_NAME, limit: PREFETCH_LIMIT }]
         : []),
     ];
   });
+  if (prefetch.length === 0) return [];
 
   const { points } = await getQdrantClient().query(collectionName, {
     prefetch,
@@ -516,9 +735,9 @@ export async function hybridSearch(
 export async function retrieveChunks(
   collectionName: string,
   question: string,
-  topK = 5,
+  options: PipelineOptions = DEFAULT_PIPELINE,
   timingsMs: Record<string, number> = {}
-): Promise<{ chunks: Document[]; queries: string[] }> {
+): Promise<{ chunks: Document[]; candidates: Document[]; queries: string[] }> {
   const llm = getChatModel();
   const time = async <T>(stage: string, fn: () => Promise<T>): Promise<T> => {
     const start = Date.now();
@@ -531,22 +750,34 @@ export async function retrieveChunks(
 
   // Step 1: Query translation. The original question is always searched too,
   // so a bad rewrite can only add candidates, never lose the obvious ones.
-  const variants = await time("queryRewrite", () => generateQueryVariants(question, llm));
+  const variants = options.multiQuery
+    ? await time("queryRewrite", () => generateQueryVariants(question, llm))
+    : [];
   const queries = Array.from(new Set([question, ...variants]));
 
-  // Step 2: Hybrid search + RRF fusion
-  const candidates = await time("hybridSearch", () => hybridSearch(collectionName, queries));
+  // Step 2: Hybrid search + RRF fusion. Without a reranker there is nothing
+  // to choose between, so only the final top-K is fetched.
+  const fetchLimit = options.rerank ? RERANK_CANDIDATES : options.topK;
+  const fused = await time("search", () =>
+    hybridSearch(collectionName, queries, fetchLimit, options.search)
+  );
 
   // Step 3: Cross-encoder reranking
-  const reranked = await time("rerank", () => rerank(question, candidates, topK));
+  const candidates = options.rerank
+    ? await time("rerank", () => rerank(question, fused, options.topK))
+    : fused.slice(0, options.topK);
 
   // Step 4: Relevance grading (CRAG). Empty result means "not in the document".
-  const relevant = await time("gradeChunks", () => gradeChunks(question, reranked, llm));
-  if (relevant.length === 0) return { chunks: [], queries };
+  const relevant = options.grade
+    ? await time("gradeChunks", () => gradeChunks(question, candidates, llm))
+    : candidates;
+  if (relevant.length === 0) return { chunks: [], candidates, queries };
 
   // Step 5: Context compression
-  const compressed = await time("compress", () => compressContext(question, relevant, llm));
-  return { chunks: compressed, queries };
+  const chunks = options.compress
+    ? await time("compress", () => compressContext(question, relevant, llm))
+    : relevant;
+  return { chunks, candidates, queries };
 }
 
 // Post-retrieval
@@ -592,7 +823,7 @@ Document chunks:
     const jsonMatch = messageText(response.content).match(/\[\s*\{[\s\S]*\}\s*\]/);
     if (jsonMatch) scores = JSON.parse(jsonMatch[0]);
   } catch (error) {
-    console.error("Error grading chunks:", error);
+    handleStageFailure("Relevance grading", error);
   }
 
   return docs.map((_, i) => {
@@ -657,7 +888,7 @@ Chunk to compress:
           },
         });
       } catch (error) {
-        console.error("Error compressing chunk:", error);
+        handleStageFailure("Compression", error);
         return doc; // Keep original if compression fails
       }
     })
@@ -707,7 +938,7 @@ Source chunks:
       };
     }
   } catch (error) {
-    console.error("Error grading answer:", error);
+    handleStageFailure("Grounding check", error);
   }
 
   return { verdict: "unverified", confidence: 0, reasoning: "Grader output could not be parsed" };
@@ -717,6 +948,7 @@ Source chunks:
 
 export function formatSources(chunks: Document[]): SourceChunk[] {
   return chunks.map((chunk, index) => ({
+    fileName: chunk.metadata.source || undefined,
     chunk: Number(chunk.metadata.chunk || index + 1),
     page:
       Number(
@@ -738,7 +970,8 @@ export function buildGroundedPrompt(chunks: Document[], feedback?: string): stri
       const chunkNumber = chunk.metadata.chunk || index + 1;
       const page =
         chunk.metadata.loc?.pageNumber || chunk.metadata.pdf?.pageNumber;
-      return `SOURCE ${index + 1} | chunk ${chunkNumber}${page ? ` | page ${page}` : ""}\n${chunk.pageContent}`;
+      const file = chunk.metadata.source ? ` | ${chunk.metadata.source}` : "";
+      return `SOURCE ${index + 1}${file} | chunk ${chunkNumber}${page ? ` | page ${page}` : ""}\n${chunk.pageContent}`;
     })
     .join("\n\n---\n\n");
 
@@ -772,48 +1005,78 @@ export async function generateGroundedAnswer(
     new HumanMessage(question),
   ]);
 
-  return messageText(response.content).trim() || NOT_FOUND_ANSWER;
+  return normaliseCitations(messageText(response.content)).trim() || NOT_FOUND_ANSWER;
+}
+
+// gpt-oss sometimes ignores the [n] instruction and writes its own markers,
+// e.g. "【1†L1】" or "【SOURCE 2 | chunk 7】". Rewrite them to [n].
+export function normaliseCitations(answer: string): string {
+  return answer.replace(/【\s*(?:SOURCE\s*)?(\d+)[^】]*】/gi, "[$1]");
+}
+
+// The model sometimes drops the period or rewords the refusal slightly
+export function isNotFoundAnswer(answer: string): boolean {
+  return answer.toLowerCase().includes("could not find that in the uploaded document");
 }
 
 // Full query pipeline: retrieve -> generate -> check grounding -> retry once
 export async function answerQuestion(
   collectionName: string,
-  question: string
+  question: string,
+  options: PipelineOptions = DEFAULT_PIPELINE
 ): Promise<AnswerResult> {
   const timingsMs: Record<string, number> = {};
   const started = Date.now();
 
-  const { chunks, queries } = await retrieveChunks(collectionName, question, 5, timingsMs);
+  const { chunks, candidates, queries } = await retrieveChunks(
+    collectionName,
+    question,
+    options,
+    timingsMs
+  );
 
-  if (chunks.length === 0) {
+  const result = (answer: string, grounding: Grounding): AnswerResult => {
     timingsMs.total = Date.now() - started;
     return {
-      answer: NOT_FOUND_ANSWER,
-      sources: [],
-      grounding: {
-        verdict: "not_found",
-        confidence: 1,
-        reasoning: "No retrieved chunk was relevant to the question.",
-        retried: false,
-      },
+      answer,
+      sources: formatSources(chunks),
+      grounding,
       queries,
       timingsMs,
+      context: chunks,
+      retrieved: candidates,
     };
+  };
+
+  if (chunks.length === 0) {
+    return result(NOT_FOUND_ANSWER, {
+      verdict: "not_found",
+      confidence: 1,
+      reasoning: "No retrieved chunk was relevant to the question.",
+      retried: false,
+    });
   }
 
   let start = Date.now();
   let answer = await generateGroundedAnswer(chunks, question);
   timingsMs.generate = Date.now() - start;
 
-  if (answer === NOT_FOUND_ANSWER) {
-    timingsMs.total = Date.now() - started;
-    return {
-      answer,
-      sources: formatSources(chunks),
-      grounding: { verdict: "not_found", confidence: 1, reasoning: "The model found no answer in the sources.", retried: false },
-      queries,
-      timingsMs,
-    };
+  if (isNotFoundAnswer(answer)) {
+    return result(answer, {
+      verdict: "not_found",
+      confidence: 1,
+      reasoning: "The model found no answer in the sources.",
+      retried: false,
+    });
+  }
+
+  if (!options.groundingCheck) {
+    return result(answer, {
+      verdict: "unverified",
+      confidence: 0,
+      reasoning: "Grounding check disabled.",
+      retried: false,
+    });
   }
 
   start = Date.now();
@@ -827,13 +1090,6 @@ export async function answerQuestion(
     grounding = await gradeAnswer(answer, chunks, question);
   }
   timingsMs.groundingCheck = Date.now() - start;
-  timingsMs.total = Date.now() - started;
 
-  return {
-    answer,
-    sources: formatSources(chunks),
-    grounding: { ...grounding, retried },
-    queries,
-    timingsMs,
-  };
+  return result(answer, { ...grounding, retried });
 }

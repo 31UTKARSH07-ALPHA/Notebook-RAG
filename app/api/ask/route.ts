@@ -22,7 +22,9 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(await answerQuestion(collectionName, question));
+    // context/retrieved hold full chunk text; the UI only needs the short sources
+    const { context, retrieved, ...result } = await answerQuestion(collectionName, question);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("ASK FAILED: ", error);
     const message =

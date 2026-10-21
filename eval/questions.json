@@ -1,0 +1,720 @@
+[
+  {
+    "id": "nist-01",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "How often does NIST fold in feedback that people send about the AI RMF Playbook?",
+    "reference_answer": "Comments on the Playbook can be emailed at any time and are reviewed and integrated on a semi-annual (twice-yearly) basis.",
+    "evidence": [
+      "will be reviewed and integrated on a semi-annual basis"
+    ],
+    "page": [
+      3
+    ]
+  },
+  {
+    "id": "nist-02",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "According to the framework, how is risk defined in terms of likelihood and consequences?",
+    "reference_answer": "Risk is the composite measure of an event's probability of occurring and the magnitude or degree of the consequences of that event.",
+    "evidence": [
+      "risk refers to the composite measure of an event’s probability of occurring and the magnitude"
+    ],
+    "page": [
+      9
+    ]
+  },
+  {
+    "id": "nist-03",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "Does the AI RMF tell organizations what level of risk they should be willing to accept?",
+    "reference_answer": "No. The AI RMF can be used to prioritize risk, but it does not prescribe risk tolerance; where no established guidelines exist, organizations should define reasonable risk tolerance themselves.",
+    "evidence": [
+      "While the AI RMF can be used to prioritize risk, it does not prescribe risk tolerance"
+    ],
+    "page": [
+      12
+    ]
+  },
+  {
+    "id": "nist-04",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "What should an organization do if an AI system turns out to carry unacceptable negative risk, such as imminent severe harm?",
+    "reference_answer": "Development and deployment should stop in a safe manner until the risks can be sufficiently managed.",
+    "evidence": [
+      "development and deployment should cease in a safe manner until risks can be sufficiently managed"
+    ],
+    "page": [
+      13
+    ]
+  },
+  {
+    "id": "nist-05",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "How does the framework characterize the overall strength of an AI system's trustworthiness relative to its individual characteristics?",
+    "reference_answer": "Trustworthiness is a social concept that ranges across a spectrum and is only as strong as its weakest characteristics.",
+    "evidence": [
+      "trustworthiness is a social concept that ranges across a spectrum and is only as strong as its weakest characteristics"
+    ],
+    "page": [
+      17
+    ]
+  },
+  {
+    "id": "nist-06",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "What kinds of attacks or threats are named as typical security worries for AI systems?",
+    "reference_answer": "Adversarial examples, data poisoning, and exfiltration of models, training data, or other intellectual property through AI system endpoints.",
+    "evidence": [
+      "Common security concerns relate to adversarial examples, data poisoning, and the exfiltration of models"
+    ],
+    "page": [
+      20
+    ]
+  },
+  {
+    "id": "nist-07",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "Which trustworthiness property is said to answer the question of why a system reached a particular decision?",
+    "reference_answer": "Interpretability answers \"why\" a decision was made and its meaning or context to the user (transparency answers \"what happened\" and explainability answers \"how\").",
+    "evidence": [
+      "Interpretability can answer the question of “why” a decision was made by the system"
+    ],
+    "page": [
+      22
+    ]
+  },
+  {
+    "id": "nist-08",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "What are the main types of bias in AI that NIST says organizations need to consider?",
+    "reference_answer": "Three major categories: systemic; computational and statistical; and human-cognitive.",
+    "evidence": [
+      "three major categories of AI bias to be considered and managed: systemic, computational and statistical, and human-cognitive"
+    ],
+    "page": [
+      23
+    ]
+  },
+  {
+    "id": "nist-09",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "Once an organization has finished the context-setting function of the Core, what decision should it be in a position to make?",
+    "reference_answer": "It should have enough contextual knowledge about AI system impacts to make an initial go/no-go decision on whether to design, develop, or deploy the AI system.",
+    "evidence": [
+      "sufficient contextual knowledge about AI system impacts to inform an initial go/no-go decision"
+    ],
+    "page": [
+      30
+    ]
+  },
+  {
+    "id": "nist-10",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "What options does the framework list for responding to AI risks considered high priority?",
+    "reference_answer": "Risk responses can include mitigating, transferring, avoiding, or accepting the risk.",
+    "evidence": [
+      "Risk response options can include mitigating, transferring, avoiding, or accepting"
+    ],
+    "page": [
+      37
+    ]
+  },
+  {
+    "id": "nist-11",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "What is the purpose of comparing an organization's present-state profile with its desired-state profile?",
+    "reference_answer": "Comparing Current and Target Profiles reveals gaps to be addressed to meet AI risk management objectives; action plans can then be developed to close those gaps.",
+    "evidence": [
+      "Comparing Current and Target Profiles likely reveals gaps to be addressed to meet AI risk management objectives"
+    ],
+    "page": [
+      38
+    ]
+  },
+  {
+    "id": "nist-12",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "Who are the key people responsible for AI governance in an organization according to the descriptions of AI actor tasks?",
+    "reference_answer": "Organizational management, senior leadership, and the Board of Directors.",
+    "evidence": [
+      "Key AI actors responsible for AI governance include organizational management, senior leadership, and the Board of Directors"
+    ],
+    "page": [
+      42
+    ]
+  },
+  {
+    "id": "nist-13",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "Does the framework give an example of an AI application that might not need a human overseeing it?",
+    "reference_answer": "Yes: some AI systems may not require human oversight, such as models used to improve video compression.",
+    "evidence": [
+      "Some AI systems may not require human oversight, such as models used to improve video compression"
+    ],
+    "page": [
+      45
+    ]
+  },
+  {
+    "id": "nist-14",
+    "doc": "nist-ai-rmf",
+    "type": "factual",
+    "question": "Is the AI RMF tied to the laws of one particular country or regulatory regime?",
+    "reference_answer": "No. It is intended to be law- and regulation-agnostic, supporting organizations' ability to operate under applicable domestic and international legal or regulatory regimes.",
+    "evidence": [
+      "The Framework should support organizations’ abilities to operate under applicable domestic and international legal or regulatory regimes"
+    ],
+    "page": [
+      47
+    ]
+  },
+  {
+    "id": "nist-15",
+    "doc": "nist-ai-rmf",
+    "type": "keyword",
+    "question": "What does GOVERN 1.7 require?",
+    "reference_answer": "Processes and procedures are in place for decommissioning and phasing out AI systems safely, without increasing risks or decreasing the organization's trustworthiness.",
+    "evidence": [
+      "Processes and procedures are in place for decommissioning and phasing out AI systems safely"
+    ],
+    "page": [
+      28
+    ]
+  },
+  {
+    "id": "nist-16",
+    "doc": "nist-ai-rmf",
+    "type": "keyword",
+    "question": "Which MEASURE subcategory covers environmental impact and sustainability, and what does it say?",
+    "reference_answer": "MEASURE 2.12: environmental impact and sustainability of AI model training and management activities (as identified in MAP) are assessed and documented.",
+    "evidence": [
+      "Environmental impact and sustainability of AI model training and management activities"
+    ],
+    "page": [
+      35
+    ]
+  },
+  {
+    "id": "nist-17",
+    "doc": "nist-ai-rmf",
+    "type": "keyword",
+    "question": "What does the acronym TEVV stand for in the AI RMF, and when are TEVV tasks performed?",
+    "reference_answer": "Test, Evaluation, Verification, and Validation; TEVV tasks are performed throughout the AI lifecycle.",
+    "evidence": [
+      "Test, Evaluation, Verification, and Validation (TEVV) tasks are performed throughout the AI lifecycle"
+    ],
+    "page": [
+      40
+    ]
+  },
+  {
+    "id": "nist-18",
+    "doc": "nist-ai-rmf",
+    "type": "keyword",
+    "question": "Under the law cited as P.L. 116-283, what is the stated goal of the AI RMF?",
+    "reference_answer": "P.L. 116-283 is the National Artificial Intelligence Initiative Act of 2020; as directed by it, the goal of the AI RMF is to offer a resource to organizations designing, developing, deploying, or using AI systems to help manage AI risks and promote trustworthy and responsible AI.",
+    "evidence": [
+      "the goal of the AI RMF is to offer a resource to the organizations designing, developing, deploying"
+    ],
+    "page": [
+      7
+    ]
+  },
+  {
+    "id": "nist-19",
+    "doc": "nist-ai-rmf",
+    "type": "keyword",
+    "question": "What does MANAGE 3.2 say about pre-trained models?",
+    "reference_answer": "Pre-trained models used for development are monitored as part of the AI system's regular monitoring and maintenance.",
+    "evidence": [
+      "Pre-trained models which are used for development are monitored as part of AI system regular monitoring"
+    ],
+    "page": [
+      37
+    ]
+  },
+  {
+    "id": "nist-20",
+    "doc": "nist-ai-rmf",
+    "type": "multi_hop",
+    "question": "How does the framework define residual risk in its discussion of risk prioritization, and how does the MANAGE function define negative residual risks and whom they must be documented for?",
+    "reference_answer": "In section 1.2.3, residual risk is risk remaining after risk treatment (per ISO Guide 73). MANAGE 1.4 defines negative residual risks as the sum of all unmitigated risks and requires that they be documented for both downstream acquirers of AI systems and end users.",
+    "evidence": [
+      "Residual risk – defined as risk remaining after risk treatment (Source: ISO GUIDE 73)",
+      "Negative residual risks (defined as the sum of all unmitigated risks) to both downstream acquirers"
+    ],
+    "page": [
+      13,
+      37
+    ]
+  },
+  {
+    "id": "nist-21",
+    "doc": "nist-ai-rmf",
+    "type": "multi_hop",
+    "question": "For safety risks that could cause serious injury or death, what priority does the framework assign, and what must be demonstrated under MEASURE before such a system is deployed?",
+    "reference_answer": "Such safety risks call for the most urgent prioritization and most thorough risk management. Under MEASURE 2.6 the system to be deployed must be shown to be safe, its residual negative risk must not exceed the risk tolerance, and it must be able to fail safely.",
+    "evidence": [
+      "Safety risks that pose a potential risk of serious injury or death call for the most urgent prioritization",
+      "its residual negative risk does not exceed the risk tolerance, and it can fail safely"
+    ],
+    "page": [
+      19,
+      35
+    ]
+  },
+  {
+    "id": "nist-22",
+    "doc": "nist-ai-rmf",
+    "type": "multi_hop",
+    "question": "In what order do most users apply the four Core functions, and why does MAP come before MEASURE and MANAGE?",
+    "reference_answer": "After instituting GOVERN outcomes, most users start with MAP and then continue to MEASURE or MANAGE, because MAP outcomes (context and risk awareness) are the basis for the MEASURE and MANAGE functions.",
+    "evidence": [
+      "After instituting the outcomes in GOVERN, most users of the AI RMF would start with the MAP function",
+      "Outcomes in the MAP function are the basis for the MEASURE and MANAGE functions"
+    ],
+    "page": [
+      26,
+      30
+    ]
+  },
+  {
+    "id": "nist-23",
+    "doc": "nist-ai-rmf",
+    "type": "multi_hop",
+    "question": "How does the framework handle risks from third-party AI components across GOVERN and MANAGE, and why might third-party technology be a concern for the deploying organization?",
+    "reference_answer": "GOVERN 6.2 requires contingency processes for failures or incidents in high-risk third-party data or AI systems; MANAGE 3.1 requires third-party AI risks and benefits to be regularly monitored with risk controls applied and documented. Appendix A notes acquired third-party technologies may be complex or opaque and their risk tolerances may not align with the deploying or operating organization.",
+    "evidence": [
+      "Contingency processes are in place to handle failures or incidents in third-party data or AI systems",
+      "AI risks and benefits from third-party resources are regularly monitored, and risk controls are applied and documented",
+      "risk tolerances may not align with the deploying or operating organization"
+    ],
+    "page": [
+      29,
+      37,
+      42
+    ]
+  },
+  {
+    "id": "nist-24",
+    "doc": "nist-ai-rmf",
+    "type": "multi_hop",
+    "question": "What does GOVERN require regarding human-AI configurations, and what range of configurations does Appendix C say these can take?",
+    "reference_answer": "GOVERN 3.2 requires policies and procedures to define and differentiate roles and responsibilities for human-AI configurations and oversight of AI systems; Appendix C says human-AI configurations can range from fully autonomous to fully manual.",
+    "evidence": [
+      "Policies and procedures are in place to define and differentiate roles and responsibilities for human-AI configurations",
+      "Human-AI configurations can span from fully autonomous to fully manual"
+    ],
+    "page": [
+      28,
+      45
+    ]
+  },
+  {
+    "id": "nist-25",
+    "doc": "nist-ai-rmf",
+    "type": "unanswerable",
+    "question": "What fines or penalties does the AI RMF impose on organizations that fail to comply with it?",
+    "reference_answer": "The document does not specify any fines or penalties; it describes the Framework as voluntary and does not mention enforcement or penalties.",
+    "evidence": [],
+    "page": []
+  },
+  {
+    "id": "nist-26",
+    "doc": "nist-ai-rmf",
+    "type": "unanswerable",
+    "question": "What minimum accuracy percentage must an AI system reach under the AI RMF before it can be deployed?",
+    "reference_answer": "The document does not give any numeric accuracy threshold; it says human judgment should be used to decide on metrics and threshold values.",
+    "evidence": [],
+    "page": []
+  },
+  {
+    "id": "nist-27",
+    "doc": "nist-ai-rmf",
+    "type": "unanswerable",
+    "question": "How many public comments did NIST receive on the drafts of the AI RMF?",
+    "reference_answer": "The document does not say; it mentions public comments on a concept paper and two drafts but gives no count.",
+    "evidence": [],
+    "page": []
+  },
+  {
+    "id": "nist-28",
+    "doc": "nist-ai-rmf",
+    "type": "unanswerable",
+    "question": "Which commercial bias-testing tools or vendors does the AI RMF recommend for measuring fairness?",
+    "reference_answer": "The document does not recommend any specific commercial tools or vendors for fairness measurement.",
+    "evidence": [],
+    "page": []
+  },
+  {
+    "id": "litm-01",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "Why were Transformer language models historically trained with small context windows?",
+    "reference_answer": "Because Transformers need memory and compute that grow quadratically with sequence length, so models were usually trained with windows of about 512-2048 tokens.",
+    "evidence": [
+      "which require memory and compute that increases quadratically in sequence length"
+    ],
+    "page": [
+      1
+    ]
+  },
+  {
+    "id": "litm-02",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "What decoding strategy did the authors use when generating model outputs?",
+    "reference_answer": "Greedy decoding. Other decoding methods were left to future work.",
+    "evidence": [
+      "We use greedy decoding when generating outputs and leave exploration of other decoding methods to future work"
+    ],
+    "page": [
+      4
+    ]
+  },
+  {
+    "id": "litm-03",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "How is a model's answer judged correct in the multi-document question answering experiments?",
+    "reference_answer": "With accuracy: a prediction counts as correct if any of the correct answers from the NaturalQuestions annotations appears in the model's output.",
+    "evidence": [
+      "we use accuracy as our primary evaluation metric, judging whether any of the correct answers"
+    ],
+    "page": [
+      3
+    ]
+  },
+  {
+    "id": "litm-04",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "Why does the synthetic retrieval task use random identifiers instead of natural-language keys and values?",
+    "reference_answer": "To remove as much natural-language meaning as possible, because language features could act as confounders. The keys and values are random UUIDs.",
+    "evidence": [
+      "since language features may present potential confounders"
+    ],
+    "page": [
+      6
+    ]
+  },
+  {
+    "id": "litm-05",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "What unusual behavior did LongChat-13B (16K) show in the 140-pair key-value setting when the target key was near the start of the input?",
+    "reference_answer": "It tended to write code to retrieve the key instead of outputting the value directly.",
+    "evidence": [
+      "tends to generate code to retrieve the key, rather than outputting the value directly"
+    ],
+    "page": [
+      7
+    ]
+  },
+  {
+    "id": "litm-06",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "What explanation do the authors offer for encoder-decoder models handling their context more robustly?",
+    "reference_answer": "Their bidirectional encoder can process each document in light of the documents that come after it, which may help the model judge how important each document is relative to the others.",
+    "evidence": [
+      "their bidirectional encoder allows processing each document in the context of future documents"
+    ],
+    "page": [
+      7
+    ]
+  },
+  {
+    "id": "litm-07",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "Why might instruction tuning make a model pay more attention to the start of its input?",
+    "reference_answer": "In supervised instruction-tuning data, the task description or instruction is usually placed at the beginning of the input, which could teach the model to weight the start more heavily.",
+    "evidence": [
+      "is commonly placed at the beginning of the input context in supervised instruction finetuning data"
+    ],
+    "page": [
+      8
+    ]
+  },
+  {
+    "id": "litm-08",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "Where do the authors think base models that were never instruction-tuned learn to use long contexts?",
+    "reference_answer": "From similarly formatted data in the Internet text they saw during pre-training, such as StackOverflow questions and answers.",
+    "evidence": [
+      "may occur in Internet text seen during pre-training, e.g., StackOverflow questions and answers"
+    ],
+    "page": [
+      9
+    ]
+  },
+  {
+    "id": "litm-09",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "What practical changes do the authors suggest to help retrieval-based readers use retrieved passages better?",
+    "reference_answer": "Better reranking of retrieved documents, so relevant information moves closer to the start of the context, or ranked list truncation, meaning retrieving fewer documents when appropriate.",
+    "evidence": [
+      "effective reranking of retrieved documents (pushing relevant information closer to the start of the input context)"
+    ],
+    "page": [
+      10
+    ]
+  },
+  {
+    "id": "litm-10",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "Which effect in human memory research resembles the U-shaped curve, and what does it say?",
+    "reference_answer": "The serial-position effect: when people freely recall items from a list, they remember the first and last items best.",
+    "evidence": [
+      "humans tend to best remember the first and last elements of the list"
+    ],
+    "page": [
+      10
+    ]
+  },
+  {
+    "id": "litm-11",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "Why is it surprising to see a serial-position-like effect in Transformer language models?",
+    "reference_answer": "Because self-attention can, in principle, retrieve any token in the context equally well.",
+    "evidence": [
+      "is technically equally capable of retrieving any token from their contexts"
+    ],
+    "page": [
+      11
+    ]
+  },
+  {
+    "id": "litm-12",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "When random Wikipedia passages replace retrieved distractors, what does continued difficulty with the middle of the context show?",
+    "reference_answer": "All models score higher in absolute terms, but they still struggle across the whole context. This shows the drop is not only caused by failing to identify the relevant document.",
+    "evidence": [
+      "indicating that their performance degradation is not solely due to an inability to identify relevant documents"
+    ],
+    "page": [
+      14
+    ]
+  },
+  {
+    "id": "litm-13",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "How did telling the model that the search results were in random order, and shuffling the distractors, change accuracy at different answer positions?",
+    "reference_answer": "The U-shape stayed. Accuracy dropped slightly when the answer was at the very beginning and rose slightly when it was in the middle or at the end.",
+    "evidence": [
+      "randomization slightly decreases performance when the relevant information is at the very beginning of the context"
+    ],
+    "page": [
+      15
+    ]
+  },
+  {
+    "id": "litm-14",
+    "doc": "lost-in-the-middle",
+    "type": "factual",
+    "question": "Why do the authors think earlier studies found only recency bias and no primacy bias in language models?",
+    "reference_answer": "The models in those studies were too small, under 1B parameters. Primacy bias appears only in larger models.",
+    "evidence": [
+      "because the models they studied were too small (less than 1B parameters)"
+    ],
+    "page": [
+      16
+    ]
+  },
+  {
+    "id": "litm-15",
+    "doc": "lost-in-the-middle",
+    "type": "keyword",
+    "question": "How many NaturalQuestions-Open queries were used for the multi-document QA task?",
+    "reference_answer": "2655 queries, the ones whose annotated long answer is a paragraph (not a list or a table).",
+    "evidence": [
+      "we take the 2655 queries where the annotated long answer is a paragraph"
+    ],
+    "page": [
+      3
+    ]
+  },
+  {
+    "id": "litm-16",
+    "doc": "lost-in-the-middle",
+    "type": "keyword",
+    "question": "How many tokens was MPT-30B-Instruct initially pre-trained on, and at what sequence length?",
+    "reference_answer": "1 trillion tokens with 2048-token sequences. This was followed by a 50-billion-token sequence-length adaptation phase with 8192-token sequences.",
+    "evidence": [
+      "The model was initially pre-trained on 1 trillion tokens using 2048-token sequences"
+    ],
+    "page": [
+      4
+    ]
+  },
+  {
+    "id": "litm-17",
+    "doc": "lost-in-the-middle",
+    "type": "keyword",
+    "question": "How does LongChat-13B (16K) extend the LLaMA-13B context window to 16384 tokens?",
+    "reference_answer": "It uses condensed rotary positional embeddings, then fine-tunes on 16384-token sequences, extending the window from 2048 tokens.",
+    "evidence": [
+      "context window from 2048 to 16384 tokens by using condensed rotary positional embeddings"
+    ],
+    "page": [
+      4
+    ]
+  },
+  {
+    "id": "litm-18",
+    "doc": "lost-in-the-middle",
+    "type": "keyword",
+    "question": "What was Flan-UL2's absolute gap between best- and worst-case accuracy on sequences within its 2048-token training window?",
+    "reference_answer": "1.9%.",
+    "evidence": [
+      "1.9% absolute difference between best- and worst-case performance"
+    ],
+    "page": [
+      7
+    ]
+  },
+  {
+    "id": "litm-19",
+    "doc": "lost-in-the-middle",
+    "type": "keyword",
+    "question": "What is the worst-case key-value retrieval accuracy without query-aware contextualization?",
+    "reference_answer": "45.6%.",
+    "evidence": [
+      "without query-aware contextualization, the worst-case performance is 45.6%"
+    ],
+    "page": [
+      8
+    ]
+  },
+  {
+    "id": "litm-20",
+    "doc": "lost-in-the-middle",
+    "type": "multi_hop",
+    "question": "Which closed model reached near-perfect key-value retrieval accuracy at every context length, and what is the maximum context length of its standard (non-extended) version?",
+    "reference_answer": "Claude-1.3, together with Claude-1.3 (100K), was nearly perfect at all context lengths. The standard Claude-1.3 has a maximum context length of 8K tokens.",
+    "evidence": [
+      "Claude-1.3 and Claude-1.3 (100K) do nearly perfectly on all evaluated input context lengths",
+      "Claude-1.3 has a maximum context length of 8K tokens"
+    ],
+    "page": [
+      5,
+      6
+    ]
+  },
+  {
+    "id": "litm-21",
+    "doc": "lost-in-the-middle",
+    "type": "multi_hop",
+    "question": "What does query-aware contextualization change in the prompt, and what result did GPT-3.5-Turbo (16K) get with it at the largest key-value setting?",
+    "reference_answer": "The query is placed both before and after the documents or key-value pairs. With this change, GPT-3.5-Turbo (16K) scored perfectly with 300 key-value pairs.",
+    "evidence": [
+      "Query-aware contextualization (placing the query before and after the documents or keyvalue pairs)",
+      "with query-aware contextualization achieves perfect performance when evaluated with 300 key-value pairs"
+    ],
+    "page": [
+      2,
+      8
+    ]
+  },
+  {
+    "id": "litm-22",
+    "doc": "lost-in-the-middle",
+    "type": "multi_hop",
+    "question": "Why was GPT-4 tested on only part of the experiments, and how large was that subset?",
+    "reference_answer": "Running GPT-4 on all the multi-document QA and key-value experiments would have cost more than $6000. Instead, it was tested on 500 random multi-document QA examples with 20 documents each.",
+    "evidence": [
+      "Evaluating GPT-4 on the full multi-document QA and key-value retrieval experiments would cost upwards of $6000",
+      "We evaluate GPT-4 (8K) on a subset of 500 random multi-document QA examples"
+    ],
+    "page": [
+      5,
+      15
+    ]
+  },
+  {
+    "id": "litm-23",
+    "doc": "lost-in-the-middle",
+    "type": "multi_hop",
+    "question": "For the open model compared with its base version in the instruction-tuning study, what method does it use to represent positions, and how much did instruction tuning shrink the best-to-worst accuracy gap?",
+    "reference_answer": "MPT-30B-Instruct uses ALiBi for positional information. Instruction tuning shrank the best-to-worst gap from nearly 10% in the base MPT-30B to about 4%.",
+    "evidence": [
+      "MPT-30B-Instruct uses AL- iBi (Press et al., 2022) to represent positional information",
+      "disparity from nearly 10% between the base model best- and worst-case performance to around 4%"
+    ],
+    "page": [
+      4,
+      9
+    ]
+  },
+  {
+    "id": "litm-24",
+    "doc": "lost-in-the-middle",
+    "type": "multi_hop",
+    "question": "In the open-domain QA case study, which retriever supplied the documents, and how much did GPT-3.5-Turbo and Claude-1.3 gain from using more than 20 retrieved documents?",
+    "reference_answer": "Contriever fine-tuned on MS-MARCO. Going past 20 documents improved accuracy only slightly: about 1.5% for GPT-3.5-Turbo and about 1% for Claude-1.3.",
+    "evidence": [
+      "A retrieval system (Contriever, finetuned on MS-MARCO) takes an input query from NaturalQuestions-Open",
+      "only marginally improves reader performance (∼1.5% for GPT-3.5- Turbo and ∼1% for Claude-1.3)"
+    ],
+    "page": [
+      9,
+      10
+    ]
+  },
+  {
+    "id": "litm-25",
+    "doc": "lost-in-the-middle",
+    "type": "unanswerable",
+    "question": "What accuracy do the Llama-2 models reach on the synthetic key-value retrieval task with 300 pairs?",
+    "reference_answer": "The paper does not report this. Llama-2 models were evaluated only on multi-document QA with 20 documents, not on key-value retrieval.",
+    "evidence": [],
+    "page": []
+  },
+  {
+    "id": "litm-26",
+    "doc": "lost-in-the-middle",
+    "type": "unanswerable",
+    "question": "How does Claude 2 compare with Claude-1.3 on the 30-document multi-document QA setting?",
+    "reference_answer": "The paper does not evaluate Claude 2. The only Claude models tested are Claude-1.3 and Claude-1.3 (100K).",
+    "evidence": [],
+    "page": []
+  },
+  {
+    "id": "litm-27",
+    "doc": "lost-in-the-middle",
+    "type": "unanswerable",
+    "question": "How many GPU hours did it take to run the open models (MPT-30B-Instruct, LongChat-13B) for all experiments?",
+    "reference_answer": "The paper does not report GPU hours or compute costs for the open models. The only cost it mentions is the estimated API cost of a full GPT-4 evaluation.",
+    "evidence": [],
+    "page": []
+  },
+  {
+    "id": "litm-28",
+    "doc": "lost-in-the-middle",
+    "type": "unanswerable",
+    "question": "Does the U-shaped position effect also appear on multi-hop datasets such as HotpotQA or TriviaQA in this paper?",
+    "reference_answer": "The paper does not test HotpotQA or TriviaQA. Its QA experiments use only NaturalQuestions-Open.",
+    "evidence": [],
+    "page": []
+  }
+]
