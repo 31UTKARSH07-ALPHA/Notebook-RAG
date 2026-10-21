@@ -2,7 +2,12 @@
 
 This document records the important design decisions in SourceSage: what was wrong before, what was changed, and why. Each entry also lists the trade-off, since every decision costs something.
 
-The first version of this project listed many advanced RAG techniques, but several didn't actually work: the reranker never ran, the keyword search wasn't BM25, the evaluation was fake, and large documents crashed on upload. The fixes are below, roughly in order of importance.
+It has two parts:
+
+- **[Part 1](#part-1-fixing-what-was-broken)** fixes the first version. It listed many advanced RAG techniques, but several didn't actually work: the reranker never ran, the keyword search wasn't BM25, the evaluation was fake, and large documents crashed on upload.
+- **[Part 2](#part-2-decisions-made-by-measuring)** covers what came after a real evaluation existed: every retrieval choice was measured, and some earlier choices were reversed because the numbers said so.
+
+# Part 1: Fixing what was broken
 
 ---
 
@@ -120,6 +125,8 @@ A grader failure now returns `unverified` instead of a false "grounded".
 
 **Decision.** Any "sentence" over 500 characters is split on word boundaries (`splitLongSentence()`). The parent-window size was renamed from `WINDOW_SIZE = 5` to `CONTEXT_SENTENCES = 2`, because the old name was wrong: the code added 2 sentences on *each side*, which makes 6 sentences, not 5.
 
+> **Later:** sentence-window chunking is no longer the default. When measured, fixed-size chunks retrieved more of the evidence (see [entry 15](#15-chunking-sentence-window--fixed-size-a-reversal)).
+
 ---
 
 ## 10. The evaluation was fake → removed until it can be done properly
@@ -167,9 +174,9 @@ A grader failure now returns `unverified` instead of a false "grounded".
 
 ---
 
-## Current latency (measured)
+## Latency at the end of Part 1
 
-From the `timingsMs` the API now returns, on a 146-chunk document (Qdrant Cloud, Cohere trial key, Groq):
+Measured from the `timingsMs` the API returns, on a 146-chunk document (Qdrant Cloud, Cohere trial key, Groq):
 
 | Stage | Typical |
 |---|---|
@@ -182,4 +189,214 @@ From the `timingsMs` the API now returns, on a 146-chunk document (Qdrant Cloud,
 | Grounding check | 0.7–1.1 s |
 | **Total** | **~8 s** (4 s when the answer is "not found") |
 
-The pipeline is accurate but slow. Not every stage is needed for every question; the planned ablation will measure which stages pay for themselves. Candidates to cut or make conditional: skip query rewriting for short, specific questions, and replace the LLM relevance grader with a rerank-score threshold.
+---
+
+# Part 2: Decisions made by measuring
+
+All numbers below come from `eval/` (method in [eval/README.md](eval/README.md), full tables in [eval/RESULTS.md](eval/RESULTS.md)). There are 56 questions over two public PDFs. Retrieval is scored on the 48 answerable questions; with that many, one question is about 2 percentage points, so only differences well above that drove decisions.
+
+## 13. Build a real evaluation before changing anything else
+
+**Before.** Every pipeline stage had been added because it's a "known RAG technique", and none had been measured. The old eval page graded the expected answer against itself (Part 1, entry 10).
+
+**Decision.** A labeled dataset and a harness (`npm run eval`).
+
+**Dataset:**
+- **56 questions** over two documents of different kinds: the NIST AI Risk Management Framework (policy, repetitive vocabulary, codes like `GOVERN 1.7`) and the "Lost in the Middle" paper (numbers, results spread across sections).
+- **Question types:** 28 factual (worded differently from the document), 10 exact-keyword, 10 multi-part, and 8 unanswerable.
+- **Labels are exact evidence quotes, not chunk IDs**, so one set of labels scores any chunking strategy. A script checked that every quote occurs exactly once in the document.
+
+**Harness:**
+- **Same code as the app.** Each config calls the app's own `retrieveChunks()`/`answerQuestion()` with stages switched through `PipelineOptions`, so nothing is re-implemented.
+- **Strict mode.** A failed stage is recorded as an error instead of quietly falling back, which would skew the scores.
+- **A different judge model.** Answers are graded by `gpt-oss-20b` while `gpt-oss-120b` generates them, so no model grades its own work.
+- **A disk cache for every API response.** Re-runs are free and reproducible, which matters on free API tiers.
+- **Hash-checked PDFs.** They're downloaded at run time and checked against a SHA-256 hash.
+
+**Trade-off.** Two documents and 56 questions is a small sample. It's enough to catch large effects, not 1–2 point ones.
+
+## 14. Score what the LLM actually sees, not the chunk that was searched
+
+**Problem found while comparing chunking strategies.** Recall was first scored on the *searched* unit. For sentence-window that's a 2-sentence child (median ~290 characters); for fixed chunks it's ~1000 characters. Five big chunks naturally contain more evidence than five small ones, so the comparison was unfair.
+
+**Decision.** Also score recall on the text the generator receives: the parent window for sentence-window, the chunk itself otherwise. Report the average context size alongside it, so recall is always read next to how much text it took.
+
+**Why it matters.** Without this, the chunking decision below could have been an artifact of chunk size. With it, the comparison is about equal amounts of context.
+
+## 15. Chunking: sentence-window → fixed-size (a reversal)
+
+**Before.** Part 1 kept the project's sentence-window chunking: search 2-sentence children, give the LLM 6-sentence parents.
+
+**Measured** (hybrid + rerank, scored on the LLM's context):
+
+| Strategy | Evidence recall | Multi-hop recall | MRR | Context the LLM gets | Upload cost |
+|---|---:|---:|---:|---:|---|
+| Sentence-window | 86.1% | 73.3% | 0.700 | ~5,600 chars | normal |
+| **Fixed ~1000 chars, 200 overlap** | **93.1%** | **76.7%** | 0.864 | ~4,650 chars | normal |
+| Semantic (cut where sentence embeddings change topic) | 88.9% | 76.7% | **0.882** | ~3,900 chars | ~2× embedding calls |
+
+**Decision.** Fixed-size chunking is the default (`DEFAULT_CHUNKING`). It finds the most evidence while giving the LLM *less* text than sentence-window. The other two remain available through `chunkDocuments(docs, strategy)`.
+
+**Why sentence-window lost.** A 2-sentence child is a weak search target. Its embedding carries little context, and BM25 has few words to match. The wide parent window helps the LLM, but only after the right child was found.
+
+**Why not semantic.** It ranks the first relevant chunk slightly higher and uses the least context. But it missed more evidence, it embeds every sentence once at upload just to find cut points (about twice the embedding calls), and its threshold (25th percentile of neighbouring-sentence similarity) is one more thing to tune.
+
+**Trade-off.** Fixed chunks can cut through a sentence or table. The 200-character overlap and the evidence-split rule in the metric cover most of that.
+
+## 16. Hybrid search and reranking: keep both, for different reasons
+
+**Measured** on fixed chunks:
+- **Hybrid search finds more.** Recall rises from 81.9% (dense only) and 77.4% (BM25 only) to 93.1%.
+- **On small sentence-window chunks the split was sharper.** On exact-keyword questions dense found 80% and BM25 100%, and hybrid kept the 100%.
+- **The reranker didn't change recall at all** (93.1% → 93.1%), but **it raised MRR from 0.808 to 0.864**. It doesn't find new evidence; it moves the right chunk to the top.
+
+**Decision.** Keep both.
+- **Hybrid** is what finds the evidence.
+- **The reranker earns its 0.4–3 s through ranking.** "Lost in the Middle" (one of the eval documents) shows that LLMs use information at the start of the context best, so a better first position is worth having even when the top-5 set is the same.
+
+## 17. Multi-query rewriting → query decomposition
+
+**Measured** on fixed chunks, hybrid + rerank:
+
+| Config | Recall | Multi-hop recall | MRR |
+|---|---:|---:|---:|
+| no rewriting | 93.1% | 76.7% | 0.864 |
+| + multi-query (3 LLM rewrites) | 93.1% | 76.7% | 0.864 |
+| **+ decomposition** | **96.2%** | **91.7%** | 0.829 |
+
+**Before.** Every question cost an LLM call for 3 rephrasings. On fixed chunks that changed nothing. On sentence-window chunks it helped a little, and only together with the reranker.
+
+**Decision.** `decompose: true, multiQuery: false` in `DEFAULT_PIPELINE`. Multi-part questions were the weakest category in every config (60–77% recall). Decomposition splits them into standalone sub-questions, searches and reranks each one separately, and merges the results by taking turns, so every part gets a share of the top 5. It's the same single LLM call per question, now aimed at the actual weak spot.
+
+**Design details:**
+- **Merge by turns, not by score.** Rerank scores from different sub-questions aren't comparable, and one easy part could otherwise take every slot.
+- **Single-part questions** pass through unchanged.
+- **Rewrites aren't generated per sub-question.** That would cost 2–3 more LLM calls per question.
+
+**Trade-off.**
+- **Slightly lower MRR** (0.864 → 0.829): the merge by turns puts one part's best chunk at position 2.
+- **More Cohere calls:** a split question makes one search and one rerank per part.
+- **One regression:** the LLM wrote the sub-question "What range of configurations does Appendix C say *these* can take?", which can't stand on its own. It's caught by the prompt rule "repeat names instead of using *it*/*they*", but not always.
+
+## 18. Contextual chunk headers: tried, not adopted
+
+**Idea.** A page-level version of Anthropic's "contextual retrieval". A small LLM writes 1–2 sentences per page ("NIST AI RMF, Section 5.1 GOVERN, covers …"), which are prepended to each chunk *for search only*. That's one call per page instead of Anthropic's one call per chunk with the whole document, which wouldn't fit Groq's free-tier 8K-tokens-per-minute limit.
+
+**Measured** on fixed chunks:
+
+| Config | Without headers | With headers |
+|---|---:|---:|
+| dense recall / MRR | 81.9% / 0.685 | 75.7% / 0.575 |
+| hybrid recall / MRR | 93.1% / 0.808 | 93.1% / 0.774 |
+| hybrid + rerank + decompose recall / MRR | 96.2% / 0.829 | 97.2% / 0.842 |
+
+**Decision.** Keep it off. `addContextHeaders()` stays as an option, and the eval runs it with `--headers`.
+
+**Why.**
+- **It hurts plain vector search.** Every chunk on a page gets the *same* header, so their embeddings move closer together and become harder to tell apart. Anthropic's per-chunk context avoids this because each chunk's context is different.
+- **The gain in the full pipeline is one evidence quote,** which is within noise.
+- **It costs one LLM call per page at upload,** minutes for a long PDF on a free tier.
+
+**Note.** The headers for this run were generated with `qwen/qwen3.8-27b`, because `gpt-oss-20b` had hit Groq's daily token cap (entry 22).
+
+## 19. Embedding model and vector size
+
+**Before.** `embed-english-v3.0` at 1024 dimensions was hard-coded.
+
+**Decision 1: make the model and size configurable.** `EMBEDDING_MODEL` and `EMBEDDING_DIM` support Cohere's newer `embed-v4.0`, whose Matryoshka embeddings can be cut to 256–1536 dimensions.
+- **Each collection records its model and size in Qdrant collection metadata.** Queries and later uploads read it from there, so changing the setting can never mix two vector spaces in one collection.
+- **A size mismatch fails with a clear error** instead of returning silently wrong results.
+- **One gotcha:** the Qdrant JS client's `createCollection()` drops the `metadata` field, so the raw API call is used.
+
+**Measured** on fixed chunks. Dense and hybrid only; rerank configs were skipped to save the Cohere trial budget.
+
+| Model @ dimensions | Dense recall / MRR | Hybrid recall / MRR | Storage per vector |
+|---|---:|---:|---:|
+| **`embed-english-v3.0` @1024 (kept)** | 81.9% / 0.685 | **93.1%** / 0.808 | 4 KB |
+| `embed-v4.0` @1024 | 85.1% / 0.694 | 92.4% / 0.790 | 4 KB |
+| `embed-v4.0` @256 | 86.1% / 0.649 | 91.3% / 0.809 | 1 KB |
+
+**Decision 2: keep v3 @1024 as the default.**
+- **On its own, v4 is the better embedding model** (+3–4 points of dense recall).
+- **But SourceSage never uses dense search alone.** In hybrid search BM25 already covers what v3 misses, and the difference is under one question.
+- **Switching would buy nothing** while invalidating the cached baseline.
+
+**The useful finding is the size trade-off.** At 256 dimensions v4 keeps ~98% of the hybrid recall in a quarter of the storage. That's the setting to choose if vector storage or memory becomes the constraint, for example many large notebooks on Qdrant Cloud's free tier.
+
+## 20. PDF text cleanup: rejoin words split at line breaks
+
+**Problem found while writing evaluation questions.** PDF extraction leaves line-break hyphens: "abil- ity", "an- swering". Neither BM25 nor the embedding model can match "abil-" to "ability".
+
+**Decision.** `cleanPageText()` rejoins `word- word` when both sides are lowercase.
+
+**A bug in the first version of the fix.** It turned "best- and worst-case" into "bestand", because that hyphen is a real *suspended* hyphen. Hyphens followed by *and/or/to* are now kept. This was found by reviewing the evaluation's evidence quotes, and is covered by unit tests.
+
+**Trade-off.** A real compound split at a line end ("key- value") becomes "keyvalue". Without a dictionary there's no way to tell it apart from a split word.
+
+## 21. The judge was wrong about refusals; refusals are scored in code
+
+**Problem found by spot-checking judgments.**
+- **A correct refusal scored as wrong.** For an unanswerable question, the system said "I could not find that in the uploaded document", which is correct, and the judge scored it 0.
+- **Refusals counted as hallucinations.** The judge listed the refusal sentence itself as an "unsupported claim", so every refusal scored 0% faithfulness.
+
+**Decision.** Plain refusals aren't sent to the judge. A refusal is correct exactly when the question is unanswerable, and it makes no claims to check. This is deterministic and also saves judge tokens.
+
+**Effect** on the naive config: correctness 88.4% → 90.2%, faithfulness 92.4% → 98.5%, correct abstention 87.5% → 100%. Answers with partial refusals ("the document doesn't say X, but …") still go to the judge.
+
+**Lesson.** Read a sample of LLM-judge outputs before trusting the averages.
+
+## 22. Free-tier limits shaped the evaluation
+
+**Limits found the hard way:**
+- **Groq:** 8K tokens/minute and **200K tokens/day per model**. The daily cap isn't visible in response headers; it showed up as errors.
+- **Cohere trial key:** 10 rerank calls/minute and 1,000 calls/month.
+
+**Decisions:**
+- **Cache every API response on disk**, keyed by the exact request. Configs that share stages (e.g. the same query rewrites) reuse results, and re-scoring an experiment costs nothing.
+- **Agents and smoke tests ran on 2–3 questions only.** All full measurements were run one at a time, so jobs didn't throttle each other.
+- **The full answer-quality comparison is spread over days.** One run of the full pipeline on 56 questions needs ~400K tokens, twice the daily cap. The naive baseline is complete; the rest is pending (see entry 25).
+
+**Lesson.** A pipeline with 5 LLM calls per question is expensive to evaluate as well as to run. That's another reason to remove stages that don't earn their place.
+
+## 23. Experiments must not inherit app defaults
+
+**Problem.** The retrieval configs were built by spreading `DEFAULT_PIPELINE` and overriding a few fields. When decomposition became the default, the context-header run (entry 18) silently ran *with* decomposition under the old config names.
+
+**Decision.**
+- **Every eval config now lists all of its options.** Only the config named `full` deliberately tracks the app default.
+- **Each config's options are saved in the results file.** That is how the problem was detected. The affected results were relabeled `+decompose` rather than discarded.
+
+## 24. Product features: notebooks, follow-ups, live progress
+
+**Multi-document notebooks.**
+- **Before:** one document per session; uploading a new file replaced the old one.
+- **Now:** a notebook is one Qdrant collection, and each upload is added to it with a `documentId` tag. If indexing fails partway, only that document's points are deleted. Sources show their file name, and the generator's prompt labels each source with its file.
+- **Why one collection, not one per document:** BM25's IDF and RRF fusion work best over one shared index, and it's one query instead of N.
+
+**Follow-up questions.**
+- **How it works:** the last 3 exchanges are sent with each question. A small model (`gpt-oss-20b`) rewrites the follow-up into a standalone question, which is used for retrieval, generation and the grounding check.
+- **History is never given to the answer generator,** so an earlier (possibly wrong) answer can't become a source.
+- **Cost:** one extra LLM call, made only when there is history.
+
+**Live progress instead of token streaming.**
+- **How it works:** `/api/ask` streams NDJSON stage events ("Searching…", "Checking grounding…") and then the result.
+- **Why not stream tokens:** the grounding check can reject a draft and regenerate it, so streamed text could be replaced in front of the user.
+
+## 25. What isn't measured yet
+
+- **End-to-end answer quality for every config.** Only the naive baseline is complete:
+  - 90.2% correctness
+  - 98.5% faithfulness
+  - 100% correct "not found" on unanswerable questions
+  - 8.3% false refusals
+
+  The `gpt-oss-120b` generator is strong enough to answer well from mediocre retrieval. The open question is whether relevance grading, compression and the grounding check (~3 extra LLM calls, ~3–4 s) improve on that enough to justify their cost. Commands:
+
+  ```bash
+  npm run eval -- generation --configs=naive,hybrid+rerank,full,full-multiquery
+  npm run eval -- latency --configs=naive,hybrid+rerank,full
+  npm run eval -- report
+  ```
+
+  Expect this to take more than one day on Groq's free tier; the cache lets it resume where it stopped.
+- **Latency of the new default pipeline.** The per-stage timings above are from Part 1. Decomposition adds one LLM call (same as the multi-query call it replaced) plus one extra search and rerank for each additional part of a split question.

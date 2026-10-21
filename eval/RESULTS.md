@@ -56,9 +56,33 @@ Searched-unit columns score the chunk that was searched; LLM-context columns sco
 
 | Config | Hit@5 | Recall@5 | MRR@5 | Recall factual | Recall keyword | Recall multi-hop | LLM-context recall | LLM-context multi-hop | Context size |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| dense | 83.3% | 77.4% | 0.532 | 75.0% | 100.0% | 61.7% | 77.4% | 61.7% | 4645 chars |
-| hybrid | 97.9% | 92.0% | 0.715 | 100.0% | 100.0% | 61.7% | 92.0% | 61.7% | 4612 chars |
-| hybrid+rerank | 97.9% | 97.2% | 0.842 | 96.4% | 100.0% | 96.7% | 97.2% | 96.7% | 4658 chars |
+| dense+decompose | 83.3% | 77.4% | 0.532 | 75.0% | 100.0% | 61.7% | 77.4% | 61.7% | 4645 chars |
+| hybrid+decompose | 97.9% | 92.0% | 0.715 | 100.0% | 100.0% | 61.7% | 92.0% | 61.7% | 4612 chars |
+| hybrid+rerank+decompose | 97.9% | 97.2% | 0.842 | 96.4% | 100.0% | 96.7% | 97.2% | 96.7% | 4658 chars |
+| dense | 81.3% | 75.7% | 0.575 | 75.0% | 100.0% | 53.3% | 75.7% | 53.3% | 4676 chars |
+| hybrid | 97.9% | 93.1% | 0.774 | 96.4% | 100.0% | 76.7% | 93.1% | 76.7% | 4656 chars |
+
+## Retrieval: fixed+embed-v4.0@256 chunking (48 answerable questions)
+
+Chunks: nist-ai-rmf 150, lost-in-the-middle 86.
+
+Searched-unit columns score the chunk that was searched; LLM-context columns score the text the generator receives (the parent window for sentence-window), with its average size.
+
+| Config | Hit@5 | Recall@5 | MRR@5 | Recall factual | Recall keyword | Recall multi-hop | LLM-context recall | LLM-context multi-hop | Context size |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| dense | 91.7% | 86.1% | 0.649 | 89.3% | 100.0% | 63.3% | 86.1% | 63.3% | 4432 chars |
+| hybrid | 97.9% | 91.3% | 0.809 | 96.4% | 100.0% | 68.3% | 91.3% | 68.3% | 4549 chars |
+
+## Retrieval: fixed+embed-v4.0@1024 chunking (48 answerable questions)
+
+Chunks: nist-ai-rmf 150, lost-in-the-middle 86.
+
+Searched-unit columns score the chunk that was searched; LLM-context columns score the text the generator receives (the parent window for sentence-window), with its average size.
+
+| Config | Hit@5 | Recall@5 | MRR@5 | Recall factual | Recall keyword | Recall multi-hop | LLM-context recall | LLM-context multi-hop | Context size |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| dense | 89.6% | 85.1% | 0.694 | 85.7% | 100.0% | 68.3% | 85.1% | 68.3% | 4514 chars |
+| hybrid | 97.9% | 92.4% | 0.790 | 96.4% | 100.0% | 73.3% | 92.4% | 73.3% | 4614 chars |
 
 ## Generation: sentence-window chunking (56 questions, judge: openai/gpt-oss-20b)
 
