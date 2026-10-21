@@ -355,3 +355,35 @@ button:disabled {
   background: var(--panel);
   color: var(--ink);
 }
+
+.bubble.pending {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+}
+
+.spin {
+  flex: none;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+/* The standalone question a follow-up was rewritten into before searching */
+.searched-for {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.45;
+}

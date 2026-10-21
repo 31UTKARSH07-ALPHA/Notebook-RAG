@@ -24,6 +24,7 @@ type ChatMessage = {
   sources?: Source[];
   grounding?: Grounding;
   totalMs?: number;
+  searchedFor?: string; // set when a follow-up was rewritten before searching
 };
 
 const GROUNDING_LABELS: Record<Grounding["verdict"], string> = {
@@ -32,6 +33,60 @@ const GROUNDING_LABELS: Record<Grounding["verdict"], string> = {
   unverified: "Grounding check unavailable",
   not_found: "Not found in your sources"
 };
+
+// Shown in the pending answer bubble as /api/ask reports each stage
+const STAGE_LABELS: Record<string, string> = {
+  condense: "Working out what your follow-up refers to...",
+  decompose: "Splitting the question into parts...",
+  queryRewrite: "Rewriting the question for search...",
+  search: "Searching your sources...",
+  rerank: "Ranking the best passages...",
+  gradeChunks: "Checking which passages are relevant...",
+  compress: "Extracting the key sentences...",
+  generate: "Writing the answer...",
+  groundingCheck: "Checking the answer against your sources...",
+  retry: "Rewriting the answer to stick to the sources..."
+};
+const DEFAULT_PENDING_LABEL = "Retrieving relevant chunks and drafting a grounded answer...";
+
+// Recent turns sent with each question so follow-ups can be resolved. The
+// server applies the same caps; trimming here just keeps requests small.
+const HISTORY_MESSAGES = 6;
+const HISTORY_MESSAGE_CHARS = 1000;
+
+type AskEvent =
+  | { type: "stage"; stage: string }
+  | { type: "error"; error: string }
+  | {
+      type: "result";
+      answer: string;
+      standaloneQuestion: string;
+      sources: Source[];
+      grounding: Grounding;
+      timingsMs?: Record<string, number>;
+    };
+
+// Reads the NDJSON body line by line, calling onEvent as each event arrives
+async function readEvents(response: Response, onEvent: (event: AskEvent) => void) {
+  if (!response.body) throw new Error("The server sent no response.");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffered = "";
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    buffered += decoder.decode(value, { stream: !done });
+    const lines = buffered.split("\n");
+    buffered = lines.pop() ?? ""; // keep a partial last line for the next read
+    for (const line of lines) {
+      if (line.trim()) onEvent(JSON.parse(line));
+    }
+    if (done) break;
+  }
+  if (buffered.trim()) onEvent(JSON.parse(buffered));
+}
+
+const normalise = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
 // A notebook is one Qdrant collection holding every document uploaded to it
 type Notebook = {
@@ -48,6 +103,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isAsking, setIsAsking] = useState(false);
+  const [stage, setStage] = useState("");
 
   const canAsk = useMemo(
     () => Boolean(notebook && question.trim() && !isAsking),
@@ -111,8 +167,13 @@ export default function Home() {
     if (!canAsk || !notebook) return;
 
     const nextQuestion = question.trim();
+    // Taken before the new question is added: the history is what came before it
+    const history = messages
+      .slice(-HISTORY_MESSAGES)
+      .map(({ role, content }) => ({ role, content: content.slice(0, HISTORY_MESSAGE_CHARS) }));
     setQuestion("");
     setError("");
+    setStage("");
     setIsAsking(true);
     setMessages((current) => [...current, { role: "user", content: nextQuestion }]);
 
@@ -124,29 +185,45 @@ export default function Home() {
         },
         body: JSON.stringify({
           question: nextQuestion,
-          collectionName: notebook.collectionName
+          collectionName: notebook.collectionName,
+          history
         })
       });
-      const data = await response.json();
 
+      // Bad requests are rejected before streaming starts, as plain JSON
       if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
         throw new Error(data.error || "Could not answer that question");
       }
 
-      setMessages((current) => [
-        ...current,
-        {
-          role: "assistant",
-          content: data.answer,
-          sources: data.sources,
-          grounding: data.grounding,
-          totalMs: data.timingsMs?.total
+      let answered = false;
+      await readEvents(response, (event) => {
+        if (event.type === "stage") {
+          setStage(event.stage);
+        } else if (event.type === "error") {
+          throw new Error(event.error || "Could not answer that question");
+        } else if (event.type === "result") {
+          answered = true;
+          const rewritten = normalise(event.standaloneQuestion) !== normalise(nextQuestion);
+          setMessages((current) => [
+            ...current,
+            {
+              role: "assistant",
+              content: event.answer,
+              sources: event.sources,
+              grounding: event.grounding,
+              totalMs: event.timingsMs?.total,
+              searchedFor: rewritten ? event.standaloneQuestion : undefined
+            }
+          ]);
         }
-      ]);
+      });
+      if (!answered) throw new Error("The answer was cut off. Please try again.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not answer that question");
     } finally {
       setIsAsking(false);
+      setStage("");
     }
   }
 
@@ -242,6 +319,9 @@ export default function Home() {
           ) : (
             messages.map((message, index) => (
               <article className={`message ${message.role}`} key={`${message.role}-${index}`}>
+                {message.searchedFor ? (
+                  <div className="searched-for">Searched for: {message.searchedFor}</div>
+                ) : null}
                 <div className="bubble">{message.content}</div>
                 {message.grounding ? (
                   <div
@@ -272,7 +352,10 @@ export default function Home() {
           )}
           {isAsking ? (
             <article className="message assistant">
-              <div className="bubble">Retrieving relevant chunks and drafting a grounded answer...</div>
+              <div className="bubble pending" aria-live="polite">
+                <Loader2 className="spin" size={16} />
+                {STAGE_LABELS[stage] ?? DEFAULT_PENDING_LABEL}
+              </div>
             </article>
           ) : null}
         </div>

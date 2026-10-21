@@ -19,6 +19,11 @@ const DEFAULT_CHAT_MODEL = "openai/gpt-oss-120b";
 const DEFAULT_UTILITY_MODEL = "openai/gpt-oss-20b";
 const HEADER_PAGE_CHARS = 6000; // page text sent when writing a context header
 
+// Conversation history used to resolve follow-up questions. Enforced here as
+// well as in the client, since the request body can't be trusted to be small.
+const MAX_HISTORY_TURNS = 6; // last 3 question/answer pairs
+const MAX_HISTORY_TURN_CHARS = 1000; // long answers are cut; their opening carries the gist
+
 // Sentence-window chunking config
 const SENTENCES_PER_CHILD = 2; // small chunk indexed in Qdrant
 const CONTEXT_SENTENCES = 2; // sentences added on each side to build the parent sent to the LLM
@@ -125,6 +130,9 @@ export type Grounding = {
 
 export type AnswerResult = {
   answer: string;
+  // What was actually searched and answered: the question itself, or the
+  // follow-up rewritten to stand alone when there was conversation history
+  standaloneQuestion: string;
   sources: SourceChunk[];
   grounding: Grounding;
   queries: string[];
@@ -142,6 +150,30 @@ export type PipelineOptions = {
   compress: boolean;
   groundingCheck: boolean; // hallucination grader + one retry
   topK: number;
+};
+
+// One earlier message of the conversation, sent by the client
+export type ChatTurn = { role: "user" | "assistant"; content: string };
+
+// Reported to onStage as each stage starts, so the UI can show progress.
+// Names match the timingsMs keys where a stage has its own timing.
+export type PipelineStage =
+  | "condense"
+  | "decompose"
+  | "queryRewrite"
+  | "search"
+  | "rerank"
+  | "gradeChunks"
+  | "compress"
+  | "generate"
+  | "groundingCheck"
+  | "retry";
+
+export type StageListener = (stage: PipelineStage) => void;
+
+export type AnswerHooks = {
+  history?: ChatTurn[];
+  onStage?: StageListener;
 };
 
 export const DEFAULT_PIPELINE: PipelineOptions = {
@@ -191,6 +223,16 @@ export function getEmbeddingConfig(): EmbeddingConfig {
 function handleStageFailure(stage: string, error: unknown): void {
   if (runtimeConfig.strict) throw error;
   console.error(`${stage} failed, using fallback:`, error);
+}
+
+// Progress is cosmetic: a listener that throws (e.g. its client disconnected)
+// must never fail the answer itself.
+function reportStage(onStage: StageListener | undefined, stage: PipelineStage): void {
+  try {
+    onStage?.(stage);
+  } catch (error) {
+    console.warn(`Stage listener failed on "${stage}":`, error);
+  }
 }
 
 export type SparseVector = {
@@ -859,6 +901,79 @@ export async function deleteDocumentChunks(collectionName: string, documentId: s
 
 // Query translation
 
+// Keeps only the most recent, well-formed turns and cuts long ones, so a
+// follow-up costs a bounded number of tokens however long the chat gets.
+export function capHistory(history: unknown): ChatTurn[] {
+  if (!Array.isArray(history)) return [];
+  return history
+    .filter(
+      (turn): turn is ChatTurn =>
+        (turn?.role === "user" || turn?.role === "assistant") &&
+        typeof turn?.content === "string" &&
+        turn.content.trim().length > 0
+    )
+    .slice(-MAX_HISTORY_TURNS)
+    .map(({ role, content }) => {
+      const text = content.replace(/\s+/g, " ").trim();
+      return {
+        role,
+        content:
+          text.length > MAX_HISTORY_TURN_CHARS ? `${text.slice(0, MAX_HISTORY_TURN_CHARS)}…` : text,
+      };
+    });
+}
+
+// Follow-ups like "what about sales staff?" can't be searched on their own:
+// neither the embedding nor BM25 knows what "what about" refers to. One LLM
+// call rewrites the follow-up into a standalone question using the
+// conversation, and everything downstream (retrieval, generation, grading)
+// uses that. The history is only used here, to resolve references; it is
+// never shown to the answer generator, so earlier answers can't become a
+// source of facts.
+export async function condenseQuestion(
+  question: string,
+  history: ChatTurn[],
+  llm?: ChatGroq
+): Promise<string> {
+  const turns = capHistory(history);
+  if (turns.length === 0) return question;
+  // The small model is enough for a rewrite and keeps follow-ups fast
+  const model = llm || getUtilityModel();
+
+  const conversation = turns
+    .map((turn) => `${turn.role === "user" ? "User" : "Assistant"}: ${turn.content}`)
+    .join("\n");
+
+  const prompt = `Given a conversation and a follow-up question, rewrite the follow-up as a standalone question that can be understood without the conversation.
+
+- Replace pronouns and vague references ("it", "they", "that policy", "what about X?") with what they refer to in the conversation.
+- Otherwise keep the user's intent and wording. Do not answer the question or add facts.
+- If the follow-up is already standalone or changes topic, return it unchanged.
+
+<conversation>
+${conversation}
+</conversation>
+
+Follow-up question: "${question}"
+
+Output only the standalone question.`;
+
+  try {
+    const response = await model.invoke([new HumanMessage(prompt)]);
+    const rewritten = messageText(response.content)
+      .replace(/^\s*standalone question:\s*/i, "")
+      .replace(/^["'“]+|["'”]+$/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    // An empty or rambling reply is worse than the raw follow-up
+    if (!rewritten || rewritten.length > Math.max(300, question.length * 4)) return question;
+    return rewritten;
+  } catch (error) {
+    handleStageFailure("Question condensing", error);
+    return question;
+  }
+}
+
 // Multi-query generation: LLM rewrites user question into 3 different phrasings
 export async function generateQueryVariants(
   question: string,
@@ -1058,10 +1173,12 @@ export async function retrieveChunks(
   collectionName: string,
   question: string,
   options: PipelineOptions = DEFAULT_PIPELINE,
-  timingsMs: Record<string, number> = {}
+  timingsMs: Record<string, number> = {},
+  onStage?: StageListener
 ): Promise<{ chunks: Document[]; candidates: Document[]; queries: string[] }> {
   const llm = getChatModel();
-  const time = async <T>(stage: string, fn: () => Promise<T>): Promise<T> => {
+  const time = async <T>(stage: PipelineStage, fn: () => Promise<T>): Promise<T> => {
+    reportStage(onStage, stage);
     const start = Date.now();
     try {
       return await fn();
@@ -1369,26 +1486,47 @@ export function isNotFoundAnswer(answer: string): boolean {
   return answer.toLowerCase().includes("could not find that in the uploaded document");
 }
 
-// Full query pipeline: retrieve -> generate -> check grounding -> retry once
+// Full query pipeline: condense follow-up -> retrieve -> generate -> check
+// grounding -> retry once.
+//
+// hooks.onStage reports progress as each stage starts. The answer itself is
+// deliberately not streamed token by token: it is only final after the
+// grounding check, and a draft that fails the check is thrown away and
+// regenerated. Streaming tokens would show the user text that may then be
+// replaced (including the unsupported claim the grader caught), so callers
+// get stage updates while waiting and the answer once it has been checked.
 export async function answerQuestion(
   collectionName: string,
   question: string,
-  options: PipelineOptions = DEFAULT_PIPELINE
+  options: PipelineOptions = DEFAULT_PIPELINE,
+  hooks: AnswerHooks = {}
 ): Promise<AnswerResult> {
+  const { onStage } = hooks;
   const timingsMs: Record<string, number> = {};
   const started = Date.now();
 
+  // Without history there is nothing to resolve, so no extra LLM call
+  let standaloneQuestion = question;
+  if (capHistory(hooks.history).length > 0) {
+    reportStage(onStage, "condense");
+    const start = Date.now();
+    standaloneQuestion = await condenseQuestion(question, hooks.history ?? []);
+    timingsMs.condense = Date.now() - start;
+  }
+
   const { chunks, candidates, queries } = await retrieveChunks(
     collectionName,
-    question,
+    standaloneQuestion,
     options,
-    timingsMs
+    timingsMs,
+    onStage
   );
 
   const result = (answer: string, grounding: Grounding): AnswerResult => {
     timingsMs.total = Date.now() - started;
     return {
       answer,
+      standaloneQuestion,
       sources: formatSources(chunks),
       grounding,
       queries,
@@ -1407,8 +1545,9 @@ export async function answerQuestion(
     });
   }
 
+  reportStage(onStage, "generate");
   let start = Date.now();
-  let answer = await generateGroundedAnswer(chunks, question);
+  let answer = await generateGroundedAnswer(chunks, standaloneQuestion);
   timingsMs.generate = Date.now() - start;
 
   if (isNotFoundAnswer(answer)) {
@@ -1429,15 +1568,18 @@ export async function answerQuestion(
     });
   }
 
+  reportStage(onStage, "groundingCheck");
   start = Date.now();
-  let grounding = await gradeAnswer(answer, chunks, question);
+  let grounding = await gradeAnswer(answer, chunks, standaloneQuestion);
   let retried = false;
 
   // One retry with the grader's feedback. More retries rarely help and double latency.
   if (grounding.verdict === "not_grounded") {
     retried = true;
-    answer = await generateGroundedAnswer(chunks, question, grounding.reasoning);
-    grounding = await gradeAnswer(answer, chunks, question);
+    reportStage(onStage, "retry");
+    answer = await generateGroundedAnswer(chunks, standaloneQuestion, grounding.reasoning);
+    reportStage(onStage, "groundingCheck");
+    grounding = await gradeAnswer(answer, chunks, standaloneQuestion);
   }
   timingsMs.groundingCheck = Date.now() - start;
 
