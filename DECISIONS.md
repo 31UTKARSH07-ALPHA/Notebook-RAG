@@ -399,4 +399,13 @@ All numbers below come from `eval/` (method in [eval/README.md](eval/README.md),
   ```
 
   Expect this to take more than one day on Groq's free tier; the cache lets it resume where it stopped.
-- **Latency of the new default pipeline.** The per-stage timings above are from Part 1. Decomposition adds one LLM call (same as the multi-query call it replaced) plus one extra search and rerank for each additional part of a split question.
+- **Latency is now measured, but only on 6 questions** (uncached, `npm run eval -- latency`):
+
+  | Config | p50 | p90 |
+  |---|---:|---:|
+  | naive (dense search → generate) | 2.7 s | 3.3 s |
+  | full (current default) | 6.5 s | 14.3 s |
+
+  - **The slow p90 is a multi-part question.**
+  - **Per-stage means for `full`:** search 1.6 s, rerank 1.4 s, decomposition 0.8 s, relevance grading 1.3 s, compression 1.0 s, generation 0.7 s, grounding check 0.8 s.
+  - **The three post-retrieval LLM checks are about half the latency.** That's why the pending answer-quality comparison matters. If `hybrid+rerank` (no grading, compression or grounding check) answers about as well as `full`, the next step is to make those stages conditional, e.g. replace the grader with a rerank-score threshold.

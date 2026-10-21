@@ -1,0 +1,128 @@
+{
+  "suite": "latency",
+  "chunking": "fixed",
+  "embedding": "embed-english-v3.0@1024",
+  "questions": [
+    "nist-02",
+    "nist-15",
+    "nist-22",
+    "litm-05",
+    "litm-21",
+    "litm-26"
+  ],
+  "generatedAt": "2026-10-21T23:50:35.413Z",
+  "configs": {
+    "naive": {
+      "p50": 2705,
+      "p90": 3343,
+      "stageMeans": {
+        "search": 1631,
+        "generate": 1189.5
+      },
+      "timings": [
+        {
+          "search": 1471,
+          "generate": 1007,
+          "total": 2479
+        },
+        {
+          "search": 1520,
+          "generate": 647,
+          "total": 2168
+        },
+        {
+          "search": 1800,
+          "generate": 1465,
+          "total": 3266
+        },
+        {
+          "search": 1600,
+          "generate": 1105,
+          "total": 2705
+        },
+        {
+          "search": 1562,
+          "generate": 1404,
+          "total": 2966
+        },
+        {
+          "search": 1833,
+          "generate": 1509,
+          "total": 3343
+        }
+      ]
+    },
+    "full": {
+      "p50": 6515,
+      "p90": 14278,
+      "stageMeans": {
+        "decompose": 805.1666666666666,
+        "search": 1617,
+        "rerank": 1367,
+        "gradeChunks": 1335.3333333333333,
+        "compress": 971.6666666666666,
+        "generate": 740.3333333333334,
+        "groundingCheck": 848.3333333333334
+      },
+      "timings": [
+        {
+          "decompose": 615,
+          "search": 1983,
+          "rerank": 432,
+          "gradeChunks": 1155,
+          "compress": 892,
+          "generate": 851,
+          "groundingCheck": 587,
+          "total": 6515
+        },
+        {
+          "decompose": 713,
+          "search": 1605,
+          "rerank": 445,
+          "gradeChunks": 1152,
+          "compress": 770,
+          "generate": 540,
+          "groundingCheck": 831,
+          "total": 6057
+        },
+        {
+          "decompose": 999,
+          "search": 1592,
+          "rerank": 562,
+          "gradeChunks": 1089,
+          "compress": 1493,
+          "generate": 1128,
+          "groundingCheck": 1266,
+          "total": 8131
+        },
+        {
+          "decompose": 820,
+          "search": 1464,
+          "rerank": 471,
+          "gradeChunks": 1456,
+          "compress": 1261,
+          "generate": 769,
+          "groundingCheck": 1385,
+          "total": 7627
+        },
+        {
+          "decompose": 1055,
+          "search": 1454,
+          "rerank": 5889,
+          "gradeChunks": 2289,
+          "compress": 1414,
+          "generate": 1154,
+          "groundingCheck": 1021,
+          "total": 14278
+        },
+        {
+          "decompose": 629,
+          "search": 1604,
+          "rerank": 403,
+          "gradeChunks": 871,
+          "total": 3507
+        }
+      ]
+    }
+  }
+}

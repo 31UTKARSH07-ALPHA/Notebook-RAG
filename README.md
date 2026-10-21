@@ -168,6 +168,6 @@ Deploy to Vercel with the same environment variables, using Qdrant Cloud for `QD
 ## Limitations
 
 - **Free-tier limits.** Groq's free tier allows 200K tokens per model per day, and Cohere's trial key 1,000 calls per month. Bulk work like the full answer-quality evaluation needs a paid tier or several days.
-- **Latency.** A question makes about 5 LLM calls in sequence (~8 s), so the UI streams stage progress. The answer-quality evaluation will show which post-retrieval stages (grading, compression, grounding check) earn their latency.
+- **Latency.** The default pipeline takes 6.5 s at p50 (naive retrieval: 2.7 s), so the UI streams stage progress. About half of that is the three post-retrieval checks (grading, compression, grounding check). The pending answer-quality comparison will show whether they earn it.
 - **Conversation memory** covers the last 3 exchanges and lives in the browser.
 - **No OCR.** Scanned (image-only) PDFs aren't supported.

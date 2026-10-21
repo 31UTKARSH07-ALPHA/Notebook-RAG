@@ -89,3 +89,10 @@ Searched-unit columns score the chunk that was searched; LLM-context columns sco
 | Config | Correctness (all) | Answerable | Multi-hop | Correct abstention | False refusal | Faithfulness | Fully faithful | Context recall | Errors |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | naive | 90.2% | 88.5% | 75.0% | 100.0% | 8.3% | 98.5% | 95.5% | 75.0% | 0 |
+
+## Latency (6 questions, uncached)
+
+| Config | p50 | p90 | search (mean) | generate (mean) | decompose (mean) | rerank (mean) | gradeChunks (mean) | compress (mean) | groundingCheck (mean) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| naive | 2.7 s | 3.3 s | 1.6 s | 1.2 s | – | – | – | – | – |
+| full | 6.5 s | 14.3 s | 1.6 s | 0.7 s | 0.8 s | 1.4 s | 1.3 s | 1.0 s | 0.8 s |
