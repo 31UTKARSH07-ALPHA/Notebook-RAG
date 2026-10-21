@@ -86,6 +86,7 @@ export type AnswerResult = {
 export type PipelineOptions = {
   search: "dense" | "sparse" | "hybrid";
   multiQuery: boolean; // add LLM rewrites of the question
+  decompose: boolean; // split multi-part questions and retrieve for each part
   rerank: boolean;
   grade: boolean; // LLM relevance filter (CRAG)
   compress: boolean;
@@ -96,6 +97,7 @@ export type PipelineOptions = {
 export const DEFAULT_PIPELINE: PipelineOptions = {
   search: "hybrid",
   multiQuery: true,
+  decompose: false, // off until the evaluation shows it pays for its extra calls
   rerank: true,
   grade: true,
   compress: true,
@@ -762,6 +764,54 @@ Do not include any other text or explanations. Format:
   }
 }
 
+const MAX_SUB_QUESTIONS = 3;
+
+// Query decomposition: a question like "What does GOVERN 1.7 require, and
+// which function covers third-party risk?" needs two passages that rarely sit
+// in the same chunk, and a single search tends to fill the top-K with
+// whichever half matches best. The LLM splits it into standalone
+// sub-questions so each half gets its own search. Single-part questions come
+// back unchanged as [question].
+export async function decomposeQuestion(
+  question: string,
+  llm: ChatGroq
+): Promise<string[]> {
+  const prompt = `Decide whether the user question asks for more than one distinct piece of information.
+
+Question: "${question}"
+
+If it asks for one thing, output the question unchanged as a single line numbered 1.
+If it asks for several things, split it into 2 or 3 standalone sub-questions, one per line, numbered 1., 2., 3.
+Each sub-question must make sense on its own: repeat names and terms instead of using "it" or "they".
+
+Do not include any other text or explanations.`;
+
+  try {
+    const response = await llm.invoke([new HumanMessage(prompt)]);
+    return parseSubQuestions(messageText(response.content), question);
+  } catch (error) {
+    handleStageFailure("Query decomposition", error);
+    return [question];
+  }
+}
+
+// Accepts numbered ("1." / "1)") or bulleted lines, tolerating code fences and
+// quotes. Anything that doesn't yield 2+ distinct sub-questions means "don't
+// decompose", so messy output degrades to the normal single-question path.
+export function parseSubQuestions(text: string, question: string): string[] {
+  const subQuestions = Array.from(
+    new Set(
+      text
+        .split("\n")
+        .map((line) => line.match(/^\s*(?:\d+[.)]|[-*•])\s*(.+)$/)?.[1])
+        .map((line) => line?.replace(/^["'`*]+|["'`*]+$/g, "").trim())
+        .filter((line): line is string => Boolean(line && line.length > 3))
+    )
+  ).slice(0, MAX_SUB_QUESTIONS);
+
+  return subQuestions.length > 1 ? subQuestions : [question];
+}
+
 // Reranking
 
 // Cohere Rerank is a cross-encoder: it reads the question and each chunk
@@ -784,6 +834,7 @@ export async function rerank(
     return data.results.map(
       (result: { index: number; relevance_score: number }) =>
         new Document({
+          id: docs[result.index].id,
           pageContent: docs[result.index].pageContent,
           metadata: {
             ...docs[result.index].metadata,
@@ -838,6 +889,7 @@ export async function hybridSearch(
     const payload = point.payload as { pageContent: string; metadata: any };
     const meta = payload.metadata || {};
     return new Document({
+      id: String(point.id), // identity for de-duplicating across searches
       // Search matched the small child; the LLM gets the wider parent window
       pageContent: meta.parentText || payload.pageContent,
       metadata: {
@@ -847,6 +899,31 @@ export async function hybridSearch(
       },
     });
   });
+}
+
+// Merges per-sub-question rankings round-robin: best of list 1, best of
+// list 2, ..., then the second-best of each, until topK. This guarantees every
+// sub-question a share of the context, which a merge by score would not:
+// rerank scores from different queries aren't comparable, and one easy part
+// could take every slot. A chunk found by two sub-questions is kept once, and
+// that list's turn passes to its next unseen chunk.
+export function interleaveRankings(lists: Document[][], topK: number): Document[] {
+  const chunkKey = (doc: Document) =>
+    doc.id ?? `${doc.metadata.documentId ?? doc.metadata.source}:${doc.metadata.chunk}`;
+  const seen = new Set<string>();
+  const merged: Document[] = [];
+  const cursors = lists.map(() => 0);
+
+  while (merged.length < topK && cursors.some((c, i) => c < lists[i].length)) {
+    for (const [i, list] of lists.entries()) {
+      while (cursors[i] < list.length && seen.has(chunkKey(list[cursors[i]]))) cursors[i]++;
+      if (cursors[i] >= list.length || merged.length >= topK) continue;
+      const doc = list[cursors[i]++];
+      seen.add(chunkKey(doc));
+      merged.push(doc);
+    }
+  }
+  return merged;
 }
 
 export async function retrieveChunks(
@@ -865,24 +942,52 @@ export async function retrieveChunks(
     }
   };
 
+  // Step 0: Decomposition. A multi-part question becomes 2-3 sub-questions,
+  // each retrieved on its own; a single-part question stays as it is.
+  const subQuestions = options.decompose
+    ? await time("decompose", () => decomposeQuestion(question, llm))
+    : [question];
+
   // Step 1: Query translation. The original question is always searched too,
   // so a bad rewrite can only add candidates, never lose the obvious ones.
-  const variants = options.multiQuery
+  //
+  // Rewrites are only generated when the question was NOT decomposed. Per
+  // sub-question rewrites would cost 2-3 extra LLM calls per question (the
+  // scarcest resource on Groq's free tier), and the sub-questions already are
+  // focused rephrasings of the parts. Rewriting the whole question and adding
+  // it to every sub-question's search would pull each list back towards
+  // whichever part dominates, which is the problem decomposition fixes.
+  const variants = options.multiQuery && subQuestions.length === 1
     ? await time("queryRewrite", () => generateQueryVariants(question, llm))
     : [];
-  const queries = Array.from(new Set([question, ...variants]));
+  const queryLists =
+    subQuestions.length > 1
+      ? subQuestions.map((subQuestion) => [subQuestion])
+      : [Array.from(new Set([question, ...variants]))];
 
-  // Step 2: Hybrid search + RRF fusion. Without a reranker there is nothing
-  // to choose between, so only the final top-K is fetched.
+  // Step 2: Hybrid search + RRF fusion, one fused list per sub-question.
+  // Without a reranker there is nothing to choose between, so only the final
+  // top-K is fetched.
   const fetchLimit = options.rerank ? RERANK_CANDIDATES : options.topK;
-  const fused = await time("search", () =>
-    hybridSearch(collectionName, queries, fetchLimit, options.search)
+  const fusedLists = await time("search", () =>
+    Promise.all(
+      queryLists.map((queries) =>
+        hybridSearch(collectionName, queries, fetchLimit, options.search)
+      )
+    )
   );
 
-  // Step 3: Cross-encoder reranking
-  const candidates = options.rerank
-    ? await time("rerank", () => rerank(question, fused, options.topK))
-    : fused.slice(0, options.topK);
+  // Step 3: Cross-encoder reranking, each list against its own sub-question
+  // (the whole question would score one part's passages low).
+  const rankedLists = options.rerank
+    ? await time("rerank", () =>
+        Promise.all(
+          fusedLists.map((fused, i) => rerank(queryLists[i][0], fused, options.topK))
+        )
+      )
+    : fusedLists.map((fused) => fused.slice(0, options.topK));
+  const candidates = interleaveRankings(rankedLists, options.topK);
+  const queries = queryLists.flat();
 
   // Step 4: Relevance grading (CRAG). Empty result means "not in the document".
   const relevant = options.grade
