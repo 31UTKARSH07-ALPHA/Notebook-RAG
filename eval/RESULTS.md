@@ -45,3 +45,9 @@ Searched-unit columns score the chunk that was searched; LLM-context columns sco
 | hybrid+multiquery+rerank | 97.9% | 93.1% | 0.864 | 96.4% | 100.0% | 76.7% | 93.1% | 76.7% | 4654 chars |
 | hybrid+rerank+decompose | 97.9% | 96.2% | 0.829 | 96.4% | 100.0% | 91.7% | 96.2% | 91.7% | 4651 chars |
 | hybrid+multiquery+rerank+decompose | 97.9% | 96.2% | 0.829 | 96.4% | 100.0% | 91.7% | 96.2% | 91.7% | 4639 chars |
+
+## Generation: sentence-window chunking (56 questions, judge: openai/gpt-oss-20b)
+
+| Config | Correctness (all) | Answerable | Multi-hop | Correct abstention | False refusal | Faithfulness | Fully faithful | Context recall | Errors |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| naive | 90.2% | 88.5% | 75.0% | 100.0% | 8.3% | 98.5% | 95.5% | 75.0% | 0 |

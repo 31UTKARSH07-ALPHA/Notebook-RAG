@@ -279,7 +279,18 @@ async function runGeneration(args: Args) {
       try {
         const result = await answerQuestion(collections[q.doc], q.question, options);
         const abstained = isNotFoundAnswer(result.answer);
-        const judgement = await judgeAnswer(q, result.answer, result.context);
+        // A plain refusal needs no LLM to grade: it's right exactly when the
+        // question is unanswerable, and it makes no claims to check. Spot
+        // checks found the judge getting both wrong (scoring a correct refusal
+        // 0, and counting the refusal sentence as an unsupported claim).
+        const judgement = abstained
+          ? {
+              correctness: q.type === "unanswerable" ? 1 : 0,
+              faithfulness: null,
+              claims: [],
+              reasoning: "Scored without the judge: the system said the answer is not in the document.",
+            }
+          : await judgeAnswer(q, result.answer, result.context);
         const contextTexts = result.context.map(indexedText);
 
         rows.push({

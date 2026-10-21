@@ -1,0 +1,1526 @@
+{
+  "suite": "generation",
+  "chunking": "sentence-window",
+  "embedding": "embed-english-v3.0@1024",
+  "judgeModel": "openai/gpt-oss-20b",
+  "questionCount": 56,
+  "generatedAt": "2026-10-21T23:13:21.254Z",
+  "configs": {
+    "naive": {
+      "options": {
+        "search": "dense",
+        "multiQuery": false,
+        "decompose": false,
+        "rerank": false,
+        "grade": false,
+        "compress": false,
+        "groundingCheck": false,
+        "topK": 5
+      },
+      "summary": {
+        "correctness": 0.9017857142857143,
+        "correctnessAnswerable": 0.8854166666666666,
+        "correctnessByType": {
+          "factual": 0.9285714285714286,
+          "keyword": 0.9,
+          "multi_hop": 0.75,
+          "unanswerable": 1
+        },
+        "faithfulness": 0.9848484848484849,
+        "fullyFaithfulRate": 0.9545454545454546,
+        "correctAbstentionRate": 1,
+        "falseRefusalRate": 0.08333333333333333,
+        "contextRecall": 0.75,
+        "retries": 0,
+        "errors": 0
+      },
+      "questions": [
+        {
+          "id": "nist-01",
+          "type": "factual",
+          "question": "How often does NIST fold in feedback that people send about the AI RMF Playbook?",
+          "answer": "NIST reviews and incorporates comments on the AI RMF Playbook on a **semi‑annual basis**[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "NIST reviews and incorporates comments on the AI RMF Playbook on a semi‑annual basis.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer correctly states the semi‑annual review frequency, which is supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "nist-02",
+          "type": "factual",
+          "question": "According to the framework, how is risk defined in terms of likelihood and consequences?",
+          "answer": "The framework defines **risk** as the composite measure that combines **the likelihood (probability) of an event occurring** with **the magnitude or degree of its consequences (the negative impact or harm that would result)**[1][5].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Risk is the composite measure that combines the likelihood (probability) of an event occurring with the magnitude or degree of its consequences (the negative impact or harm that would result).",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches the reference definition and is fully supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 0.3333333333333333
+          }
+        },
+        {
+          "id": "nist-03",
+          "type": "factual",
+          "question": "Does the AI RMF tell organizations what level of risk they should be willing to accept?",
+          "answer": "No. The AI RMF does not prescribe a specific level of risk that an organization must be willing to accept. It notes that while the framework can be used to prioritize risk, it does not prescribe risk tolerance; that tolerance is left to the organization (or AI actor) and is highly contextual, depending on legal, regulatory, and use‑case factors[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The AI RMF does not prescribe a specific level of risk that an organization must be willing to accept.",
+              "supported": true
+            },
+            {
+              "claim": "The framework can be used to prioritize risk.",
+              "supported": true
+            },
+            {
+              "claim": "It does not prescribe risk tolerance.",
+              "supported": true
+            },
+            {
+              "claim": "That tolerance is left to the organization (or AI actor) and is highly contextual, depending on legal, regulatory, and use‑case factors.",
+              "supported": true
+            }
+          ],
+          "reasoning": "All claims are directly supported by the provided context and match the reference answer.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "nist-04",
+          "type": "factual",
+          "question": "What should an organization do if an AI system turns out to carry unacceptable negative risk, such as imminent severe harm?",
+          "answer": "If an AI system is found to pose an unacceptable negative risk—e.g., imminent severe harm or catastrophic impacts—the organization should stop its development and deployment in a safe manner and only resume once the risks have been sufficiently managed[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The organization should stop its development and deployment in a safe manner until the risks can be sufficiently managed.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches the key fact in the reference and is fully supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "nist-05",
+          "type": "factual",
+          "question": "How does the framework characterize the overall strength of an AI system's trustworthiness relative to its individual characteristics?",
+          "answer": "The framework says that an AI system’s overall trustworthiness is only as strong as its weakest trustworthiness characteristic—trustworthiness is viewed as a spectrum‑based social concept that is limited by the least‑performing attribute[2][3].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The framework says that an AI system’s overall trustworthiness is only as strong as its weakest trustworthiness characteristic.",
+              "supported": true
+            },
+            {
+              "claim": "Trustworthiness is viewed as a spectrum‑based social concept that is limited by the least‑performing attribute.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer accurately reflects the key facts in the reference answer and all its claims are supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 0.5
+          }
+        },
+        {
+          "id": "nist-06",
+          "type": "factual",
+          "question": "What kinds of attacks or threats are named as typical security worries for AI systems?",
+          "answer": "Typical security worries for AI systems include a range of attacks and threats such as adversarial examples, data‑poisoning attacks, and the exfiltration of models, training data, or other intellectual property through system endpoints [1].  They also encompass broader confidentiality, integrity, and availability concerns for the AI system, its training and output data, and the underlying software and hardware [2].  Specific machine‑learning threats named in the guidance are evasion attacks, model‑extraction attacks, membership‑inference attacks, attacks that affect availability, and other abuses that exploit the complex attack surface of AI systems [3].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Typical security worries for AI systems include a range of attacks and threats such as adversarial examples, data‑poisoning attacks, and the exfiltration of models, training data, or other intellectual property through system endpoints.",
+              "supported": true
+            },
+            {
+              "claim": "They also encompass broader confidentiality, integrity, and availability concerns for the AI system, its training and output data, and the underlying software and hardware.",
+              "supported": true
+            },
+            {
+              "claim": "Specific machine‑learning threats named in the guidance are evasion attacks, model‑extraction attacks, membership‑inference attacks, attacks that affect availability, and other abuses that exploit the complex attack surface of AI systems.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer correctly lists the key facts from the reference and adds no contradictory information.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "nist-07",
+          "type": "factual",
+          "question": "Which trustworthiness property is said to answer the question of why a system reached a particular decision?",
+          "answer": "The trustworthiness property that addresses “why a system reached a particular decision” is **interpretability** — a characteristic that can be traded off against other properties such as privacy or accuracy[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The trustworthiness property that addresses “why a system reached a particular decision” is interpretability.",
+              "supported": true
+            },
+            {
+              "claim": "Interpretability can be traded off against other properties such as privacy or accuracy.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer correctly identifies interpretability as the property that answers why a decision was made, matching the reference, and its claim about trade‑offs is supported by the provided context.",
+          "contextRecall": 0,
+          "retrieval": {
+            "hit": 0,
+            "recall": 0,
+            "reciprocalRank": 0
+          }
+        },
+        {
+          "id": "nist-08",
+          "type": "factual",
+          "question": "What are the main types of bias in AI that NIST says organizations need to consider?",
+          "answer": "NIST identifies three major categories of AI bias that organizations should consider:\n\n1. **Systemic bias** – bias embedded in datasets, organizational norms, practices, processes across the AI lifecycle, and the broader society that uses AI systems[1][4]  \n2. **Computational and statistical bias** – bias arising in datasets and algorithmic processes, often due to systematic errors from non‑representative samples[1][5]  \n3. **Human‑cognitive bias** – bias stemming from how individuals or groups perceive AI information, make decisions, or think about the AI system’s purposes and functions[1][4]",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "NIST identifies three major categories of AI bias that organizations should consider.",
+              "supported": true
+            },
+            {
+              "claim": "Systemic bias – bias embedded in datasets, organizational norms, practices, processes across the AI lifecycle, and the broader society that uses AI systems.",
+              "supported": true
+            },
+            {
+              "claim": "Computational and statistical bias – bias arising in datasets and algorithmic processes, often due to systematic errors from non‑representative samples.",
+              "supported": true
+            },
+            {
+              "claim": "Human‑cognitive bias – bias stemming from how individuals or groups perceive AI information, make decisions, or think about the AI system’s purposes and functions.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches the reference and all claims are supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "nist-09",
+          "type": "factual",
+          "question": "Once an organization has finished the context-setting function of the Core, what decision should it be in a position to make?",
+          "answer": "After completing the MAP (context‑setting) function, an organization should have enough contextual knowledge to make an initial **go‑or‑no‑go decision** about whether to proceed with designing, developing, or deploying the AI system[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "After completing the MAP (context‑setting) function, an organization should have enough contextual knowledge to make an initial go‑or‑no‑go decision about whether to proceed with designing, developing, or deploying the AI system.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches the reference answer and is directly supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "nist-10",
+          "type": "factual",
+          "question": "What options does the framework list for responding to AI risks considered high priority?",
+          "answer": "The framework says that for AI risks identified as high‑priority, the response options may include **mitigating, transferring, avoiding, or accepting** the risk[4].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The framework says that for AI risks identified as high‑priority, the response options may include mitigating, transferring, avoiding, or accepting the risk.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer exactly matches the reference answer and is supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 0.25
+          }
+        },
+        {
+          "id": "nist-11",
+          "type": "factual",
+          "question": "What is the purpose of comparing an organization's present-state profile with its desired-state profile?",
+          "answer": "Comparing an organization’s Current (present‑state) profile with its Target (desired‑state) profile is meant to uncover the gaps between how AI risk is presently being managed and the outcomes the organization wants to achieve. Identifying those gaps enables the organization to create and prioritize action plans that address the missing or insufficient risk‑management activities, allocate resources, and ultimately meet its AI risk‑management objectives[1][3].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Comparing an organization’s Current (present‑state) profile with its Target (desired‑state) profile is meant to uncover the gaps between how AI risk is presently being managed and the outcomes the organization wants to achieve.",
+              "supported": true
+            },
+            {
+              "claim": "Identifying those gaps enables the organization to create and prioritize action plans that address the missing or insufficient risk‑management activities, allocate resources, and ultimately meet its AI risk‑management objectives.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer fully matches the key facts of the reference answer and all its claims are supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 0.3333333333333333
+          }
+        },
+        {
+          "id": "nist-12",
+          "type": "factual",
+          "question": "Who are the key people responsible for AI governance in an organization according to the descriptions of AI actor tasks?",
+          "answer": "The primary individuals charged with AI governance within an organization are organizational management, senior leadership, and the Board of Directors [1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The primary individuals charged with AI governance within an organization are organizational management, senior leadership, and the Board of Directors.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer exactly matches the reference answer and is directly supported by the cited context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "nist-13",
+          "type": "factual",
+          "question": "Does the framework give an example of an AI application that might not need a human overseeing it?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 0,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": 0,
+          "retrieval": {
+            "hit": 0,
+            "recall": 0,
+            "reciprocalRank": 0
+          }
+        },
+        {
+          "id": "nist-14",
+          "type": "factual",
+          "question": "Is the AI RMF tied to the laws of one particular country or regulatory regime?",
+          "answer": "No. The AI Risk Management Framework is presented as a voluntary, rights‑preserving, non‑sector‑specific and use‑case‑agnostic resource that can be applied by organizations of any size and in any sector, rather than being bound to the laws of a single country or regulatory regime [1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The AI Risk Management Framework is presented as a voluntary, rights‑preserving, non‑sector‑specific and use‑case‑agnostic resource.",
+              "supported": true
+            },
+            {
+              "claim": "It can be applied by organizations of any size and in any sector.",
+              "supported": true
+            },
+            {
+              "claim": "Rather than being bound to the laws of a single country or regulatory regime.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches the reference answer exactly and all its claims are supported by the provided context.",
+          "contextRecall": 0,
+          "retrieval": {
+            "hit": 0,
+            "recall": 0,
+            "reciprocalRank": 0
+          }
+        },
+        {
+          "id": "nist-15",
+          "type": "keyword",
+          "question": "What does GOVERN 1.7 require?",
+          "answer": "GOVERN 1.7 requires that an organization have processes and procedures for safely decommissioning and phasing out AI systems in a way that does not increase risks or diminish the organization’s trustworthiness[3].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "GOVERN 1.7 requires that an organization have processes and procedures for safely decommissioning and phasing out AI systems in a way that does not increase risks or diminish the organization’s trustworthiness.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer exactly matches the key facts of the reference answer and is fully supported by the provided context.",
+          "contextRecall": 0,
+          "retrieval": {
+            "hit": 0,
+            "recall": 0,
+            "reciprocalRank": 0
+          }
+        },
+        {
+          "id": "nist-16",
+          "type": "keyword",
+          "question": "Which MEASURE subcategory covers environmental impact and sustainability, and what does it say?",
+          "answer": "The subcategory is **MEASURE 2.12**. It states: *“Environmental impact and sustainability of AI model training and management activities – as identified in the MAP function – are assessed and documented.”*[1]",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The subcategory is MEASURE 2.12.",
+              "supported": true
+            },
+            {
+              "claim": "It states: \"Environmental impact and sustainability of AI model training and management activities – as identified in the MAP function – are assessed and documented.\"",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer exactly matches the reference and is fully supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "nist-17",
+          "type": "keyword",
+          "question": "What does the acronym TEVV stand for in the AI RMF, and when are TEVV tasks performed?",
+          "answer": "The AI RMF uses **TEVV** to mean **Test, Evaluation, Verification, and Validation**[2].  \n\nTEVV tasks are **carried out throughout the AI lifecycle**—they can be planned as early as the design phase and continue through development (model‑building), deployment (system integration, testing, and recalibration), and operations (ongoing monitoring, incident tracking, emergent‑risk detection, and redress). In other words, TEVV activities are performed at every stage of the AI system’s life[2].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The AI RMF uses TEVV to mean Test, Evaluation, Verification, and Validation.",
+              "supported": true
+            },
+            {
+              "claim": "TEVV tasks are carried out throughout the AI lifecycle.",
+              "supported": true
+            },
+            {
+              "claim": "They can be planned as early as the design phase and continue through development, deployment, and operations.",
+              "supported": true
+            }
+          ],
+          "reasoning": "All claims match the reference and are supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "nist-18",
+          "type": "keyword",
+          "question": "Under the law cited as P.L. 116-283, what is the stated goal of the AI RMF?",
+          "answer": "The goal of the AI RMF, as directed by the National Artificial Intelligence Initiative Act of 2020 (P.L. 116‑283), is to provide a resource for organizations that design, develop, deploy, or use AI systems that helps them manage AI‑related risks and promotes the trustworthy and responsible development and use of AI systems[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The goal of the AI RMF, as directed by the National Artificial Intelligence Initiative Act of 2020 (P.L. 116‑283), is to provide a resource for organizations that design, develop, deploy, or use AI systems that helps them manage AI‑related risks and promotes the trustworthy and responsible development and use of AI systems.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer exactly matches the key facts in the reference and is fully supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "nist-19",
+          "type": "keyword",
+          "question": "What does MANAGE 3.2 say about pre-trained models?",
+          "answer": "MANAGE 3.2 requires that pre‑trained models used for development be monitored as part of the AI system’s regular monitoring and maintenance activities[1][4].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "MANAGE 3.2 requires that pre‑trained models used for development be monitored as part of the AI system’s regular monitoring and maintenance activities.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer accurately reflects the statement in the document and is fully supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "nist-20",
+          "type": "multi_hop",
+          "question": "How does the framework define residual risk in its discussion of risk prioritization, and how does the MANAGE function define negative residual risks and whom they must be documented for?",
+          "answer": "The framework defines **residual risk** as the risk that remains after risk‑treatment actions have been applied — i.e., the risk left over once mitigation, transfer, avoidance, or acceptance measures are in place[2].  \n\nIn the **MANAGE** function, **negative residual risks** are described as “the sum of all unmitigated risks,” and the framework requires that these risks be **documented for both downstream acquirers of AI systems and the end users** of those systems[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The framework defines residual risk as the risk that remains after risk‑treatment actions have been applied — i.e., the risk left over once mitigation, transfer, avoidance, or acceptance measures are in place.",
+              "supported": true
+            },
+            {
+              "claim": "In the MANAGE function, negative residual risks are described as “the sum of all unmitigated risks,” and the framework requires that these risks be documented for both downstream acquirers of AI systems and the end users of those systems.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer accurately reflects the reference and all claims are supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "nist-21",
+          "type": "multi_hop",
+          "question": "For safety risks that could cause serious injury or death, what priority does the framework assign, and what must be demonstrated under MEASURE before such a system is deployed?",
+          "answer": "The framework says that safety risks that could lead to serious injury or death are treated with **the most urgent prioritization and the most thorough risk‑management process**[1].  \n\nBefore such a system is deployed, the **MEASURE** function requires that users **develop and apply appropriate qualitative and quantitative measurements that provide unique, meaningful information about the system’s AI risks and verify the efficacy of those metrics**. Those measurement outcomes are then used to support risk monitoring and response in the subsequent MANAGE step[2].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 0.5,
+          "faithfulness": 0.6666666666666666,
+          "claims": [
+            {
+              "claim": "Safety risks that could lead to serious injury or death are treated with the most urgent prioritization and the most thorough risk‑management process.",
+              "supported": true
+            },
+            {
+              "claim": "Before such a system is deployed, the MEASURE function requires that users develop and apply appropriate qualitative and quantitative measurements that provide unique, meaningful information about the system’s AI risks and verify the efficacy of those metrics.",
+              "supported": false
+            },
+            {
+              "claim": "Those measurement outcomes are then used to support risk monitoring and response in the subsequent MANAGE step.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The answer partially matches the reference but omits key safety requirements and adds unsupported details.",
+          "contextRecall": 0.5,
+          "retrieval": {
+            "hit": 1,
+            "recall": 0.5,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "nist-22",
+          "type": "multi_hop",
+          "question": "In what order do most users apply the four Core functions, and why does MAP come before MEASURE and MANAGE?",
+          "answer": "Most users begin with **GOVERN** to establish a risk‑management culture and the necessary policies. Once that governance structure is in place, they typically move to **MAP** and then proceed to **MEASURE** or **MANAGE** (or both) [2].  \n\n**Why MAP comes before MEASURE and MANAGE:**  \nThe MAP function builds the contextual knowledge about an AI system’s impacts, limitations, and potential risks. After MAP is completed, organizations have enough information to make an initial go/no‑go decision and to supply the data needed for the subsequent measurement of performance and the management of identified risks [4]. Thus MAP is performed first so that MEASURE and MANAGE can be grounded in a clear understanding of the system’s context and risk profile.",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Most users begin with GOVERN to establish a risk‑management culture and the necessary policies.",
+              "supported": true
+            },
+            {
+              "claim": "Once that governance structure is in place, they typically move to MAP and then proceed to MEASURE or MANAGE (or both).",
+              "supported": true
+            },
+            {
+              "claim": "The MAP function builds the contextual knowledge about an AI system’s impacts, limitations, and potential risks.",
+              "supported": true
+            },
+            {
+              "claim": "After MAP is completed, organizations have enough information to make an initial go/no‑go decision and to supply the data needed for the subsequent measurement of performance and the management of identified risks.",
+              "supported": true
+            },
+            {
+              "claim": "Thus MAP is performed first so that MEASURE and MANAGE can be grounded in a clear understanding of the system’s context and risk profile.",
+              "supported": true
+            }
+          ],
+          "reasoning": "All system answer claims are supported by the provided context and the answer matches the reference.",
+          "contextRecall": 0.5,
+          "retrieval": {
+            "hit": 1,
+            "recall": 0.5,
+            "reciprocalRank": 0.5
+          }
+        },
+        {
+          "id": "nist-23",
+          "type": "multi_hop",
+          "question": "How does the framework handle risks from third-party AI components across GOVERN and MANAGE, and why might third-party technology be a concern for the deploying organization?",
+          "answer": "The AI RMF asks organizations to treat any third‑party AI component as part of the overall risk picture in both the **GOVERN** and **MANAGE** functions.\n\n* **GOVERN** – The framework calls for “enhanced processes for governing… AI risk” and for “established policies, processes, practices, and procedures for improving organizational accountability” [1].  Those governance activities must include mapping where third‑party models, data or services are used, documenting the associated risks, and setting policies that define who may incorporate external AI technology and under what controls.\n\n* **MANAGE** – In the MAP, MEASURE and MANAGE functions the RMF explicitly notes that existing guidance “does not comprehensively address… risks associated with third‑party AI technologies, transfer learning, and off‑label use where AI systems may be trained for decision‑making outside an organization’s security controls or trained in one domain and then ‘fine‑tuned’ for another” [2][5].  The RMF therefore requires organizations to measure, monitor, and mitigate those risks—e.g., by tracking emergent risks, applying technical safeguards, and continuously evaluating the component’s behavior [3].\n\n**Why third‑party technology is a concern for the deploying organization**\n\n* It may be developed or trained **outside the organization’s security controls**, leaving unknown vulnerabilities or bias [2][5].\n* It can be **fine‑tuned or used off‑label** for purposes the original developer did not anticipate, expanding the attack surface and introducing new safety or privacy threats [2][5].\n* Lack of transparency about the **risk metrics or methodologies** used by the supplier can make it hard for the deployer to assess or align risk tolerances [3].\n\nThus, the RMF integrates third‑party AI risks into governance structures and into ongoing risk‑management activities, recognizing that external components can bring hidden biases, security weaknesses, and compliance challenges for the organization that deploys them.",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 0.5,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The AI RMF asks organizations to treat any third‑party AI component as part of the overall risk picture in both the GOVERN and MANAGE functions.",
+              "supported": true
+            },
+            {
+              "claim": "GOVERN – The framework calls for “enhanced processes for governing… AI risk” and for “established policies, processes, practices, and procedures for improving organizational accountability.”",
+              "supported": true
+            },
+            {
+              "claim": "Those governance activities must include mapping where third‑party models, data or services are used, documenting the associated risks, and setting policies that define who may incorporate external AI technology and under what controls.",
+              "supported": true
+            },
+            {
+              "claim": "MANAGE – In the MAP, MEASURE and MANAGE functions the RMF explicitly notes that existing guidance “does not comprehensively address… risks associated with third‑party AI technologies, transfer learning, and off‑label use where AI systems may be trained for decision‑making outside an organization’s security controls or trained in one domain and then ‘fine‑tuned’ for another.”",
+              "supported": true
+            },
+            {
+              "claim": "The RMF therefore requires organizations to measure, monitor, and mitigate those risks—e.g., by tracking emergent risks, applying technical safeguards, and continuously evaluating the component’s behavior.",
+              "supported": true
+            },
+            {
+              "claim": "It may be developed or trained outside the organization’s security controls, leaving unknown vulnerabilities or bias.",
+              "supported": true
+            },
+            {
+              "claim": "It can be fine‑tuned or used off‑label for purposes the original developer did not anticipate, expanding the attack surface and introducing new safety or privacy threats.",
+              "supported": true
+            },
+            {
+              "claim": "Lack of transparency about the risk metrics or methodologies used by the supplier can make it hard for the deployer to assess or align risk tolerances.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer omits the specific contingency processes required by GOVERN 6.2 and the explicit monitoring and documentation requirement of MANAGE 3.1, so it is only partially correct; all listed claims are supported by the provided context.",
+          "contextRecall": 0,
+          "retrieval": {
+            "hit": 0,
+            "recall": 0,
+            "reciprocalRank": 0
+          }
+        },
+        {
+          "id": "nist-24",
+          "type": "multi_hop",
+          "question": "What does GOVERN require regarding human-AI configurations, and what range of configurations does Appendix C say these can take?",
+          "answer": "GOVERN calls for organizations to put policies and procedures in place that **define and differentiate the roles and responsibilities for human‑AI configurations and for oversight of AI systems**[2].  \n\nAppendix C notes that **human‑AI configurations can span the full spectrum—from fully autonomous systems that make decisions on their own, to systems that defer decisions to a human expert, to systems that serve as an additional opinion for a human decision‑maker, and even to fully manual (human‑only) setups**[3].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "GOVERN calls for organizations to put policies and procedures in place that define and differentiate the roles and responsibilities for human‑AI configurations and for oversight of AI systems.",
+              "supported": true
+            },
+            {
+              "claim": "Appendix C notes that human‑AI configurations can span the full spectrum—from fully autonomous systems that make decisions on their own, to systems that defer decisions to a human expert, to systems that serve as an additional opinion for a human decision‑maker, and even to fully manual (human‑only) setups.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer accurately reflects the reference and is fully supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 0.5
+          }
+        },
+        {
+          "id": "nist-25",
+          "type": "unanswerable",
+          "question": "What fines or penalties does the AI RMF impose on organizations that fail to comply with it?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": null,
+          "retrieval": null
+        },
+        {
+          "id": "nist-26",
+          "type": "unanswerable",
+          "question": "What minimum accuracy percentage must an AI system reach under the AI RMF before it can be deployed?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": null,
+          "retrieval": null
+        },
+        {
+          "id": "nist-27",
+          "type": "unanswerable",
+          "question": "How many public comments did NIST receive on the drafts of the AI RMF?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": null,
+          "retrieval": null
+        },
+        {
+          "id": "nist-28",
+          "type": "unanswerable",
+          "question": "Which commercial bias-testing tools or vendors does the AI RMF recommend for measuring fairness?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": null,
+          "retrieval": null
+        },
+        {
+          "id": "litm-01",
+          "type": "factual",
+          "question": "Why were Transformer language models historically trained with small context windows?",
+          "answer": "Transformer language models were historically trained with relatively small context windows (typically 512–2048 tokens) because the self‑attention mechanism in Transformers incurs memory and computational costs that grow quadratically with sequence length. This quadratic scaling made it impractical to train models on much longer contexts given the hardware limits at the time[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 0.6666666666666666,
+          "claims": [
+            {
+              "claim": "Transformer language models were historically trained with relatively small context windows (typically 512–2048 tokens).",
+              "supported": true
+            },
+            {
+              "claim": "The self‑attention mechanism in Transformers incurs memory and computational costs that grow quadratically with sequence length.",
+              "supported": true
+            },
+            {
+              "claim": "This quadratic scaling made it impractical to train models on much longer contexts given the hardware limits at the time.",
+              "supported": false
+            }
+          ],
+          "reasoning": "The system answer matches the reference facts and all but one claim are directly supported by the provided context.",
+          "contextRecall": 0,
+          "retrieval": {
+            "hit": 0,
+            "recall": 0,
+            "reciprocalRank": 0
+          }
+        },
+        {
+          "id": "litm-02",
+          "type": "factual",
+          "question": "What decoding strategy did the authors use when generating model outputs?",
+          "answer": "The authors generated model outputs using **greedy decoding**[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The authors generated model outputs using greedy decoding.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches the reference answer and is directly supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-03",
+          "type": "factual",
+          "question": "How is a model's answer judged correct in the multi-document question answering experiments?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 0,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": 0,
+          "retrieval": {
+            "hit": 0,
+            "recall": 0,
+            "reciprocalRank": 0
+          }
+        },
+        {
+          "id": "litm-04",
+          "type": "factual",
+          "question": "Why does the synthetic retrieval task use random identifiers instead of natural-language keys and values?",
+          "answer": "The synthetic retrieval task deliberately replaces natural‑language keys and values with random UUIDs to strip away linguistic meaning and avoid confounding language‑specific effects. By using random identifiers, the task isolates the model’s basic ability to locate exact token matches in the input context without the influence of natural‑language semantics. [1]",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The synthetic retrieval task deliberately replaces natural‑language keys and values with random UUIDs to strip away linguistic meaning and avoid confounding language‑specific effects.",
+              "supported": true
+            },
+            {
+              "claim": "By using random identifiers, the task isolates the model’s basic ability to locate exact token matches in the input context without the influence of natural‑language semantics.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer fully matches the key facts of the reference and is supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-05",
+          "type": "factual",
+          "question": "What unusual behavior did LongChat-13B (16K) show in the 140-pair key-value setting when the target key was near the start of the input?",
+          "answer": "In the 140‑pair key‑value experiment, when the key to be retrieved was placed near the beginning of the context, LongChat‑13B (16K) often did not answer with the value directly; instead it started to **generate code that would retrieve the key** rather than simply outputting the corresponding value [2][4].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "In the 140‑pair key‑value experiment, when the key to be retrieved was placed near the beginning of the context, LongChat‑13B (16K) often did not answer with the value directly; instead it started to generate code that would retrieve the key.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches the reference factually and the claim is directly supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 0.5
+          }
+        },
+        {
+          "id": "litm-06",
+          "type": "factual",
+          "question": "What explanation do the authors offer for encoder-decoder models handling their context more robustly?",
+          "answer": "The authors suggest that encoder‑decoder models can exploit their **bidirectional encoder** to read each document in the context of both earlier and later material. Because the encoder processes the entire input at once, it can evaluate the importance of a document relative to future documents, which lets the model make better use of long context windows and remain more robust when relevant information appears at different positions[4]. This contrasts with decoder‑only models, which can only attend to prior tokens at each timestep.",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Encoder-decoder models can exploit their bidirectional encoder to read each document in the context of both earlier and later material.",
+              "supported": true
+            },
+            {
+              "claim": "Because the encoder processes the entire input at once, it can evaluate the importance of a document relative to future documents.",
+              "supported": true
+            },
+            {
+              "claim": "This lets the model make better use of long context windows and remain more robust when relevant information appears at different positions.",
+              "supported": true
+            },
+            {
+              "claim": "This contrasts with decoder-only models, which can only attend to prior tokens at each timestep.",
+              "supported": true
+            }
+          ],
+          "reasoning": "All claims are directly supported by the provided context and match the reference answer.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 0.25
+          }
+        },
+        {
+          "id": "litm-07",
+          "type": "factual",
+          "question": "Why might instruction tuning make a model pay more attention to the start of its input?",
+          "answer": "Instruction‑finetuned models are repeatedly trained on data where the task description or instruction appears at the very beginning of the prompt.  During supervised fine‑tuning the model learns that the most important information for producing the correct response is often located in those early tokens, so it comes to give the start of the context disproportionately more weight.  This “primacy bias” is a direct consequence of the way the instruction data are formatted, causing instruction‑tuned models to attend more to the beginning of the input [2].  The effect is also reflected in the observed performance curves, where instruction‑tuned models show higher accuracy when the relevant information is placed at the start of the context [1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Instruction‑finetuned models are repeatedly trained on data where the task description or instruction appears at the very beginning of the prompt.",
+              "supported": true
+            },
+            {
+              "claim": "During supervised fine‑tuning the model learns that the most important information for producing the correct response is often located in those early tokens, so it comes to give the start of the context disproportionately more weight.",
+              "supported": true
+            },
+            {
+              "claim": "This “primacy bias” is a direct consequence of the way the instruction data are formatted, causing instruction‑tuned models to attend more to the beginning of the input.",
+              "supported": true
+            },
+            {
+              "claim": "The effect is also reflected in the observed performance curves, where instruction‑tuned models show higher accuracy when the relevant information is placed at the start of the context.",
+              "supported": true
+            }
+          ],
+          "reasoning": "All system claims are directly supported by the provided context and align with the reference answer.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 0.5
+          }
+        },
+        {
+          "id": "litm-08",
+          "type": "factual",
+          "question": "Where do the authors think base models that were never instruction-tuned learn to use long contexts?",
+          "answer": "The authors hypothesize that base (non‑instruction‑tuned) language models pick up the ability to use long contexts from similarly‑formatted data that they encounter during pre‑training on Internet text—such as the question‑and‑answer style found on sites like Stack Overflow[2].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Base (non‑instruction‑tuned) language models pick up the ability to use long contexts from similarly‑formatted data encountered during pre‑training on Internet text, such as the question‑and‑answer style found on sites like Stack Overflow.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches the reference exactly and is supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 0.5
+          }
+        },
+        {
+          "id": "litm-09",
+          "type": "factual",
+          "question": "What practical changes do the authors suggest to help retrieval-based readers use retrieved passages better?",
+          "answer": "The authors propose two practical tweaks:\n\n* **Rerank the retrieved list** so that the most relevant passages appear near the beginning of the prompt, thereby giving the reader model easier access to the needed information.  \n* **Trim the retrieved list** (ranked‑list truncation) and retrieve fewer documents when possible, since adding more than about 20 documents yields only marginal gains while increasing context length, latency, and cost.  \n\nThese changes aim to place useful content where the model can attend to it most effectively and avoid overwhelming the reader with excess context [1][2].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Rerank the retrieved list so that the most relevant passages appear near the beginning of the prompt, thereby giving the reader model easier access to the needed information.",
+              "supported": true
+            },
+            {
+              "claim": "Trim the retrieved list (ranked‑list truncation) and retrieve fewer documents when possible, since adding more than about 20 documents yields only marginal gains while increasing context length, latency, and cost.",
+              "supported": true
+            },
+            {
+              "claim": "These changes aim to place useful content where the model can attend to it most effectively and avoid overwhelming the reader with excess context.",
+              "supported": true
+            }
+          ],
+          "reasoning": "All claims are directly supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-10",
+          "type": "factual",
+          "question": "Which effect in human memory research resembles the U-shaped curve, and what does it say?",
+          "answer": "The phenomenon is known as the **serial‑position effect**. Psychological research on free‑association recall shows that people tend to remember the first items in a list (a primacy advantage) and the last items (a recency advantage), with poorer recall for items in the middle [3].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The phenomenon is known as the serial‑position effect.",
+              "supported": true
+            },
+            {
+              "claim": "People tend to remember the first items in a list (primacy advantage) and the last items (recency advantage), with poorer recall for items in the middle.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer accurately reproduces the key facts from the reference answer and is fully supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 0.3333333333333333
+          }
+        },
+        {
+          "id": "litm-11",
+          "type": "factual",
+          "question": "Why is it surprising to see a serial-position-like effect in Transformer language models?",
+          "answer": "It is surprising because the self‑attention mechanism that powers Transformers is, in principle, able to retrieve any token from the entire context with equal ease. One would therefore not expect a systematic bias toward items at the beginning or end of the input, yet the models show a serial‑position‑like (U‑shaped) performance pattern[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "the self‑attention mechanism that powers Transformers is, in principle, able to retrieve any token from the entire context with equal ease.",
+              "supported": true
+            },
+            {
+              "claim": "One would therefore not expect a systematic bias toward items at the beginning or end of the input, yet the models show a serial‑position‑like (U‑shaped) performance pattern.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer correctly states the key fact from the reference and adds consistent, non‑contradictory elaboration; both claims are supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-12",
+          "type": "factual",
+          "question": "When random Wikipedia passages replace retrieved distractors, what does continued difficulty with the middle of the context show?",
+          "answer": "The fact that models still perform poorly when the distractor passages are replaced with random Wikipedia chunks shows that the difficulty is not caused by the quality of the retrieved distractors; rather, it reflects a fundamental limitation of the language model in using information that appears in the middle of a long input context[4].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Models still perform poorly when distractor passages are replaced with random Wikipedia chunks.",
+              "supported": true
+            },
+            {
+              "claim": "The difficulty is not caused by the quality of the retrieved distractors.",
+              "supported": true
+            },
+            {
+              "claim": "It reflects a fundamental limitation of the language model in using information that appears in the middle of a long input context.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer aligns with the reference and all its claims are supported by the provided context.",
+          "contextRecall": 0,
+          "retrieval": {
+            "hit": 0,
+            "recall": 0,
+            "reciprocalRank": 0
+          }
+        },
+        {
+          "id": "litm-13",
+          "type": "factual",
+          "question": "How did telling the model that the search results were in random order, and shuffling the distractors, change accuracy at different answer positions?",
+          "answer": "Randomizing the order of the retrieved documents and explicitly telling the model that the search results are “ordered randomly” (and shuffling the k − 1 distractor documents) did not eliminate the U‑shaped pattern, but it did shift the accuracy slightly. When the relevant answer was placed at the very beginning of the context, accuracy dropped a little compared with the default (sorted‑by‑relevance) setting. Conversely, when the answer appeared in the middle or toward the end of the input, accuracy rose modestly. Thus, randomizing the distractors modestly hurt performance for early‑position answers and modestly helped it for middle‑ and late‑position answers, while the overall curve remained U‑shaped[2].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Randomizing the order of retrieved documents and telling the model that the search results are \"ordered randomly\" did not eliminate the U‑shaped pattern.",
+              "supported": true
+            },
+            {
+              "claim": "Randomizing the distractors modestly hurt performance for early-position answers.",
+              "supported": true
+            },
+            {
+              "claim": "Randomizing the distractors modestly helped performance for middle- and late-position answers.",
+              "supported": true
+            },
+            {
+              "claim": "The overall curve remained U-shaped.",
+              "supported": true
+            },
+            {
+              "claim": "When the relevant answer was placed at the very beginning of the context, accuracy dropped a little compared with the default (sorted‑by‑relevance) setting.",
+              "supported": true
+            },
+            {
+              "claim": "When the answer appeared in the middle or toward the end of the input, accuracy rose modestly.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer accurately reflects all key facts of the reference answer and is fully supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 0.5
+          }
+        },
+        {
+          "id": "litm-14",
+          "type": "factual",
+          "question": "Why do the authors think earlier studies found only recency bias and no primacy bias in language models?",
+          "answer": "The authors argue that earlier work examined language models that were too small to exhibit a primacy effect. Those prior studies used models with fewer than about 1 billion parameters, which, according to the authors, only show a recency bias. Because the models were undersized, the earlier experiments never revealed the U‑shaped (primacy + recency) performance curve that larger models display[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Earlier work examined language models that were too small to exhibit a primacy effect.",
+              "supported": true
+            },
+            {
+              "claim": "Those prior studies used models with fewer than about 1 billion parameters.",
+              "supported": true
+            },
+            {
+              "claim": "They only show a recency bias.",
+              "supported": true
+            },
+            {
+              "claim": "Because the models were undersized, the earlier experiments never revealed the U‑shaped (primacy + recency) performance curve that larger models display.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches all key facts of the reference answer and each claim is corroborated by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-15",
+          "type": "keyword",
+          "question": "How many NaturalQuestions-Open queries were used for the multi-document QA task?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 0,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": 0,
+          "retrieval": {
+            "hit": 0,
+            "recall": 0,
+            "reciprocalRank": 0
+          }
+        },
+        {
+          "id": "litm-16",
+          "type": "keyword",
+          "question": "How many tokens was MPT-30B-Instruct initially pre-trained on, and at what sequence length?",
+          "answer": "MPT‑30B‑Instruct was initially pre‑trained on **1 trillion tokens** using **2048‑token sequences**[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "MPT‑30B‑Instruct was initially pre‑trained on 1 trillion tokens using 2048‑token sequences.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer correctly states the initial pre‑training token count and sequence length, which is directly supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-17",
+          "type": "keyword",
+          "question": "How does LongChat-13B (16K) extend the LLaMA-13B context window to 16384 tokens?",
+          "answer": "LongChat‑13B (16K) widens LLaMA‑13B’s original 2 048‑token window to 16 384 tokens by first applying **condensed rotary positional embeddings** to the model and then fine‑tuning it on sequences of length 16 384 tokens[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "LongChat‑13B (16K) widens LLaMA‑13B’s original 2 048‑token window to 16 384 tokens by first applying condensed rotary positional embeddings to the model and then fine‑tuning it on sequences of length 16 384 tokens.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer exactly matches the key facts in the reference and is fully supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-18",
+          "type": "keyword",
+          "question": "What was Flan-UL2's absolute gap between best- and worst-case accuracy on sequences within its 2048-token training window?",
+          "answer": "Flan‑UL2’s performance varied by only about **1.9 % absolute** between its best‑ and worst‑case accuracy on sequences that fit within its 2048‑token training‑time context window[1][2].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Flan‑UL2’s performance varied by only about 1.9% absolute between its best‑ and worst‑case accuracy on sequences that fit within its 2048‑token training‑time context window.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches the reference fact and is fully supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-19",
+          "type": "keyword",
+          "question": "What is the worst-case key-value retrieval accuracy without query-aware contextualization?",
+          "answer": "The worst‑case accuracy on the key‑value retrieval task when query‑aware contextualization is not used is **45.6 %**[1][2]",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The worst‑case accuracy on the key‑value retrieval task when query‑aware contextualization is not used is 45.6 %",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches the reference answer and the claim is directly supported by the provided context excerpts.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-20",
+          "type": "multi_hop",
+          "question": "Which closed model reached near-perfect key-value retrieval accuracy at every context length, and what is the maximum context length of its standard (non-extended) version?",
+          "answer": "Claude‑1.3 achieved near‑perfect key‑value retrieval accuracy across all evaluated context lengths [1]. The document does not specify the maximum context length of the standard (non‑extended) Claude‑1.3 model. I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 0,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": 0.5,
+          "retrieval": {
+            "hit": 1,
+            "recall": 0.5,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-21",
+          "type": "multi_hop",
+          "question": "What does query-aware contextualization change in the prompt, and what result did GPT-3.5-Turbo (16K) get with it at the largest key-value setting?",
+          "answer": "Query‑aware contextualization modifies the prompt by inserting the query both before and after the data (e.g., the documents or key‑value pairs) so that the model can attend to the query while processing the context [1][4]. Using this format, GPT‑3.5‑Turbo (16K) achieved perfect (near‑100 %) performance on the largest key‑value retrieval setting of 300 pairs [1][4].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Query‑aware contextualization modifies the prompt by inserting the query both before and after the data (e.g., the documents or key‑value pairs).",
+              "supported": true
+            },
+            {
+              "claim": "GPT‑3.5‑Turbo (16K) achieved perfect (near‑100 %) performance on the largest key‑value retrieval setting of 300 pairs.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches the reference exactly and all claims are directly supported by the provided context.",
+          "contextRecall": 0.5,
+          "retrieval": {
+            "hit": 1,
+            "recall": 0.5,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-22",
+          "type": "multi_hop",
+          "question": "Why was GPT-4 tested on only part of the experiments, and how large was that subset?",
+          "answer": "GPT‑4 was only run on a **sample** of the full multi‑document QA experiments because evaluating it on the entire set would be prohibitively expensive (the authors note it would cost “upwards of $6000”)[2].  \nConsequently they evaluated GPT‑4 (8K) on a **subset of 500 random multi‑document QA examples** (each containing 20 documents)[1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "GPT‑4 was only run on a sample of the full multi‑document QA experiments because evaluating it on the entire set would be prohibitively expensive (the authors note it would cost “upwards of $6000”).",
+              "supported": true
+            },
+            {
+              "claim": "They evaluated GPT‑4 (8K) on a subset of 500 random multi‑document QA examples (each containing 20 documents).",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches all key facts of the reference and is fully supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-23",
+          "type": "multi_hop",
+          "question": "For the open model compared with its base version in the instruction-tuning study, what method does it use to represent positions, and how much did instruction tuning shrink the best-to-worst accuracy gap?",
+          "answer": "Instruction tuning reduced the best‑to‑worst accuracy gap from nearly 10 % to about 4 %—a shrinkage of roughly 6 percentage points[1].  \nThe uploaded excerpts do not state which positional‑encoding method the open model uses.",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 0.5,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Instruction tuning reduced the best‑to‑worst accuracy gap from nearly 10 % to about 4 %—a shrinkage of roughly 6 percentage points.",
+              "supported": true
+            },
+            {
+              "claim": "The uploaded excerpts do not state which positional‑encoding method the open model uses.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system correctly reports the gap shrinkage but incorrectly claims the positional encoding method is unspecified, whereas the reference states it uses ALiBi.",
+          "contextRecall": 0.5,
+          "retrieval": {
+            "hit": 1,
+            "recall": 0.5,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-24",
+          "type": "multi_hop",
+          "question": "In the open-domain QA case study, which retriever supplied the documents, and how much did GPT-3.5-Turbo and Claude-1.3 gain from using more than 20 retrieved documents?",
+          "answer": "The case‑study retrieved Wikipedia passages with the **Contriever** retriever [2].  \nWhen the number of retrieved documents was increased beyond 20, the reader models only improved slightly: **GPT‑3.5‑Turbo** gained roughly **1.5 %** and **Claude‑1.3** gained about **1 %** in performance [4][5].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The case‑study retrieved Wikipedia passages with the Contriever retriever.",
+              "supported": true
+            },
+            {
+              "claim": "When the number of retrieved documents was increased beyond 20, the reader models only improved slightly: GPT‑3.5‑Turbo gained roughly 1.5 % and Claude‑1.3 gained about 1 % in performance.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer matches all key facts of the reference and is fully supported by the provided context.",
+          "contextRecall": 0.5,
+          "retrieval": {
+            "hit": 1,
+            "recall": 0.5,
+            "reciprocalRank": 0.2
+          }
+        },
+        {
+          "id": "litm-25",
+          "type": "unanswerable",
+          "question": "What accuracy do the Llama-2 models reach on the synthetic key-value retrieval task with 300 pairs?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": null,
+          "retrieval": null
+        },
+        {
+          "id": "litm-26",
+          "type": "unanswerable",
+          "question": "How does Claude 2 compare with Claude-1.3 on the 30-document multi-document QA setting?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": null,
+          "retrieval": null
+        },
+        {
+          "id": "litm-27",
+          "type": "unanswerable",
+          "question": "How many GPU hours did it take to run the open models (MPT-30B-Instruct, LongChat-13B) for all experiments?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": null,
+          "retrieval": null
+        },
+        {
+          "id": "litm-28",
+          "type": "unanswerable",
+          "question": "Does the U-shaped position effect also appear on multi-hop datasets such as HotpotQA or TriviaQA in this paper?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": null,
+          "retrieval": null
+        }
+      ],
+      "errors": []
+    }
+  }
+}
