@@ -54,6 +54,10 @@ flowchart TD
 
 Each response also returns the queries used and a per-stage latency breakdown (`timingsMs`).
 
+**Follow-up questions.** The UI sends the last 6 messages (each cut to 1000 characters; the server enforces the same caps) with every question. When there is history, one call to the small model rewrites the follow-up into a standalone question ("what about sales staff?" → "How many days can sales staff work remotely?"), and retrieval, generation and the grounding check all use that. The history is only used to resolve references and is never given to the answer generator, so earlier answers can't become a source of facts. The UI shows "Searched for: …" when the rewrite differs from what was typed.
+
+**Live progress.** `/api/ask` streams newline-delimited JSON: a `{"type":"stage"}` event as each stage starts, then one `{"type":"result"}` (or `{"type":"error"}`) event. The answer is not streamed token by token, because a draft that fails the grounding check is replaced by a regenerated one.
+
 For the reasoning behind each design choice, including what was broken in earlier versions and how it was fixed, see [DECISIONS.md](DECISIONS.md).
 
 ## Tech stack
@@ -70,7 +74,7 @@ For the reasoning behind each design choice, including what was broken in earlie
 app/
   page.tsx              chat UI: upload, ask, sources, grounding badge
   api/upload/route.ts   parse → chunk → embed → index
-  api/ask/route.ts      runs answerQuestion()
+  api/ask/route.ts      runs answerQuestion(), streams stage events + result as NDJSON
 lib/
   rag.ts                the whole RAG pipeline
 ```
@@ -111,5 +115,5 @@ Deploy to Vercel with the same environment variables, using Qdrant Cloud for `QD
 
 - **Evaluation:** a retrieval benchmark (Recall@k, MRR) and LLM-judge metrics (faithfulness, answer relevancy) over a hand-labeled question set, plus an ablation of each pipeline stage. Not built yet.
 - **Latency:** a question currently makes about 5 LLM calls in sequence. Stage timings are recorded so this can be measured and tuned.
-- One document per notebook; no conversation memory between questions.
+- Conversation memory covers only the last 3 exchanges, and lives in the browser (a reload starts over).
 - Scanned (image-only) PDFs aren't supported (no OCR).
