@@ -283,7 +283,7 @@ export default function Home() {
           </div>
           <div className="tip">
             <strong>Retrieval</strong>
-            <p className="section-note">Question rewrites, hybrid dense + BM25 search fused with RRF, then Cohere reranking.</p>
+            <p className="section-note">Multi-part questions are split and searched separately: hybrid dense + BM25 search fused with RRF, then Cohere reranking.</p>
           </div>
           <div className="tip">
             <strong>Grounding</strong>

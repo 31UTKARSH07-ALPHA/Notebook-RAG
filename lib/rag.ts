@@ -181,8 +181,11 @@ export type AnswerHooks = {
 
 export const DEFAULT_PIPELINE: PipelineOptions = {
   search: "hybrid",
-  multiQuery: true,
-  decompose: false, // off until the evaluation shows it pays for its extra calls
+  // Measured on fixed chunks: rewrites added nothing (same recall and MRR),
+  // while decomposition lifted multi-hop recall from 76.7% to 91.7%. Both
+  // cost one LLM call, so decomposition takes the slot.
+  multiQuery: false,
+  decompose: true,
   rerank: true,
   grade: true,
   compress: true,

@@ -91,13 +91,14 @@ const GENERATION_CONFIGS: Record<string, PipelineOptions> = {
     groundingCheck: false,
   },
   full: DEFAULT_PIPELINE,
-  "full+decompose": { ...DEFAULT_PIPELINE, decompose: true },
+  // The previous default, kept to show what the swap changed end to end
+  "full-multiquery": { ...DEFAULT_PIPELINE, multiQuery: true, decompose: false },
 };
 
 // Seconds to wait between questions in the latency suite so Groq's free-tier
 // token-per-minute limit is never hit; otherwise retry back-off would be
 // measured as pipeline latency.
-const LATENCY_PAUSE_S: Record<string, number> = { naive: 10, "hybrid+rerank": 10, full: 60, "full+decompose": 60 };
+const LATENCY_PAUSE_S: Record<string, number> = { naive: 10, "hybrid+rerank": 10, full: 60, "full-multiquery": 60 };
 
 type Args = {
   suite: string;
