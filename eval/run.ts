@@ -51,11 +51,18 @@ import {
 
 const RESULTS_DIR = join(EVAL_DIR, "results");
 
+// Every config spells out all options rather than spreading DEFAULT_PIPELINE:
+// otherwise changing an app default silently changes what an experiment
+// measures (this happened once when decomposition became the default).
 const RETRIEVAL_BASE: PipelineOptions = {
-  ...DEFAULT_PIPELINE,
+  search: "hybrid",
+  multiQuery: false,
+  decompose: false,
+  rerank: false,
   grade: false,
   compress: false,
   groundingCheck: false,
+  topK: 5,
 };
 
 const RETRIEVAL_CONFIGS: Record<string, PipelineOptions> = {
@@ -83,16 +90,20 @@ const GENERATION_CONFIGS: Record<string, PipelineOptions> = {
     topK: 5,
   },
   // Strong retrieval, no LLM post-processing
-  "hybrid+rerank": {
-    ...DEFAULT_PIPELINE,
-    multiQuery: false,
-    grade: false,
-    compress: false,
-    groundingCheck: false,
-  },
+  "hybrid+rerank": { ...RETRIEVAL_BASE, rerank: true },
+  // The app's current default, whatever it is (recorded in the results file)
   full: DEFAULT_PIPELINE,
-  // The previous default, kept to show what the swap changed end to end
-  "full-multiquery": { ...DEFAULT_PIPELINE, multiQuery: true, decompose: false },
+  // The previous default: multi-query rewrites instead of decomposition
+  "full-multiquery": {
+    search: "hybrid",
+    multiQuery: true,
+    decompose: false,
+    rerank: true,
+    grade: true,
+    compress: true,
+    groundingCheck: true,
+    topK: 5,
+  },
 };
 
 // Seconds to wait between questions in the latency suite so Groq's free-tier

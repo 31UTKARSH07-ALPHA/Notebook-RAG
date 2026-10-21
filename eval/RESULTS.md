@@ -16,6 +16,8 @@ Searched-unit columns score the chunk that was searched; LLM-context columns sco
 | hybrid+multiquery | 85.4% | 80.2% | 0.661 | 78.6% | 100.0% | 65.0% | 84.0% | 73.3% | 5356 chars |
 | hybrid+rerank | 87.5% | 81.3% | 0.700 | 82.1% | 100.0% | 60.0% | 86.1% | 73.3% | 5582 chars |
 | hybrid+multiquery+rerank | 89.6% | 84.4% | 0.714 | 85.7% | 100.0% | 65.0% | 88.2% | 73.3% | 5665 chars |
+| hybrid+rerank+decompose | 89.6% | 86.8% | 0.667 | 82.1% | 100.0% | 86.7% | 89.9% | 91.7% | 5456 chars |
+| hybrid+multiquery+rerank+decompose | 91.7% | 88.9% | 0.681 | 85.7% | 100.0% | 86.7% | 92.0% | 91.7% | 5491 chars |
 
 ## Retrieval: semantic chunking (48 answerable questions)
 
@@ -45,6 +47,18 @@ Searched-unit columns score the chunk that was searched; LLM-context columns sco
 | hybrid+multiquery+rerank | 97.9% | 93.1% | 0.864 | 96.4% | 100.0% | 76.7% | 93.1% | 76.7% | 4654 chars |
 | hybrid+rerank+decompose | 97.9% | 96.2% | 0.829 | 96.4% | 100.0% | 91.7% | 96.2% | 91.7% | 4651 chars |
 | hybrid+multiquery+rerank+decompose | 97.9% | 96.2% | 0.829 | 96.4% | 100.0% | 91.7% | 96.2% | 91.7% | 4639 chars |
+
+## Retrieval: fixed+headers chunking (48 answerable questions)
+
+Chunks: nist-ai-rmf 150, lost-in-the-middle 86.
+
+Searched-unit columns score the chunk that was searched; LLM-context columns score the text the generator receives (the parent window for sentence-window), with its average size.
+
+| Config | Hit@5 | Recall@5 | MRR@5 | Recall factual | Recall keyword | Recall multi-hop | LLM-context recall | LLM-context multi-hop | Context size |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| dense | 83.3% | 77.4% | 0.532 | 75.0% | 100.0% | 61.7% | 77.4% | 61.7% | 4645 chars |
+| hybrid | 97.9% | 92.0% | 0.715 | 100.0% | 100.0% | 61.7% | 92.0% | 61.7% | 4612 chars |
+| hybrid+rerank | 97.9% | 97.2% | 0.842 | 96.4% | 100.0% | 96.7% | 97.2% | 96.7% | 4658 chars |
 
 ## Generation: sentence-window chunking (56 questions, judge: openai/gpt-oss-20b)
 
