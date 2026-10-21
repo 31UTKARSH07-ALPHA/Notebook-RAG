@@ -12,8 +12,6 @@ const DEFAULT_PREFIX = "sourcesage";
 const DENSE_VECTOR_NAME = "dense";
 const SPARSE_VECTOR_NAME = "sparse";
 
-const EMBEDDING_MODEL = "embed-english-v3.0";
-const EMBEDDING_DIM = 1024; // embed-english-v3.0 output dimension
 const EMBED_BATCH_SIZE = 96; // Cohere embed accepts at most 96 texts per request
 const RERANK_MODEL = "rerank-v3.5";
 const DEFAULT_CHAT_MODEL = "openai/gpt-oss-120b";
@@ -47,6 +45,58 @@ const SEMANTIC_MAX_CHUNK_CHARS = 1000;
 const SEMANTIC_MIN_CHUNK_CHARS = 300;
 
 export type ChunkingStrategy = "sentence-window" | "fixed" | "semantic";
+
+// Embedding models
+//
+// The dense vector size is fixed when a collection is created, and vectors
+// from different models (or sizes) are not comparable, so a collection must
+// be queried with exactly the model and size it was built with.
+//
+// embed-v4.0 is a Matryoshka model: its smaller output sizes are prefixes of
+// the full vector, trained to stand on their own. Smaller vectors cost less to
+// store and search (float32 = dim x 4 bytes: 256 -> 1 KB, 1024 -> 4 KB,
+// 1536 -> 6 KB per chunk, before Qdrant's index overhead) at some loss of
+// accuracy, which the eval measures.
+export type EmbeddingConfig = { model: string; dim: number };
+
+const EMBEDDING_MODELS: Record<string, { dims: number[]; outputDimension: boolean }> = {
+  // Fixed size; Cohere rejects output_dimension for v3 models
+  "embed-english-v3.0": { dims: [1024], outputDimension: false },
+  // First entry is the model's native size, used when no size is given
+  "embed-v4.0": { dims: [1536, 1024, 512, 256], outputDimension: true },
+};
+
+export const DEFAULT_EMBEDDING: EmbeddingConfig = { model: "embed-english-v3.0", dim: 1024 };
+
+export function formatEmbedding(config: EmbeddingConfig): string {
+  return `${config.model}@${config.dim}`;
+}
+
+// Throws on an unknown model or a size the model can't produce, so a typo in
+// an env var fails on the first request instead of building a
+// collection that later queries can't match.
+export function resolveEmbedding(model: string, dim?: number): EmbeddingConfig {
+  const spec = EMBEDDING_MODELS[model];
+  if (!spec) {
+    throw new Error(
+      `Unknown embedding model "${model}". Supported: ${Object.keys(EMBEDDING_MODELS).join(", ")}.`
+    );
+  }
+  const size = dim ?? spec.dims[0];
+  if (!spec.dims.includes(size)) {
+    throw new Error(`${model} cannot produce ${size}-d vectors. Supported sizes: ${spec.dims.join(", ")}.`);
+  }
+  return { model, dim: size };
+}
+
+// "embed-v4.0@512" -> { model: "embed-v4.0", dim: 512 }; the size is optional
+export function parseEmbedding(value: string): EmbeddingConfig {
+  const [model, dim] = value.split("@");
+  if (dim !== undefined && !/^\d+$/.test(dim)) {
+    throw new Error(`Invalid embedding "${value}". Expected <model>@<dim>, e.g. embed-v4.0@512.`);
+  }
+  return resolveEmbedding(model, dim === undefined ? undefined : Number(dim));
+}
 
 // BM25 parameters (standard defaults)
 const BM25_K1 = 1.2;
@@ -118,12 +168,24 @@ type RuntimeConfig = {
   maxRetries: number;
   llmCache?: BaseCache;
   apiCache?: KeyValueCache;
+  // Model for new collections; overrides EMBEDDING_MODEL / EMBEDDING_DIM
+  embedding?: EmbeddingConfig;
 };
 
 const runtimeConfig: RuntimeConfig = { strict: false, maxRetries: 2 };
 
 export function configureRuntime(config: Partial<RuntimeConfig>): void {
   Object.assign(runtimeConfig, config);
+}
+
+// The model new collections are built with. Existing collections keep the
+// model recorded in their metadata (see getCollectionEmbedding).
+export function getEmbeddingConfig(): EmbeddingConfig {
+  if (runtimeConfig.embedding) return runtimeConfig.embedding;
+  const model = process.env.EMBEDDING_MODEL || DEFAULT_EMBEDDING.model;
+  const dim = process.env.EMBEDDING_DIM;
+  if (dim && !/^\d+$/.test(dim)) throw new Error(`EMBEDDING_DIM must be a number, got "${dim}".`);
+  return resolveEmbedding(model, dim ? Number(dim) : undefined);
 }
 
 function handleStageFailure(stage: string, error: unknown): void {
@@ -155,9 +217,12 @@ export function createCollectionName(): string {
 }
 
 function messageText(content: BaseMessage["content"]): string {
-  return typeof content === "string"
-    ? content
-    : content.map((part: any) => ("text" in part ? part.text : "")).join("");
+  const text =
+    typeof content === "string"
+      ? content
+      : content.map((part: any) => ("text" in part ? part.text : "")).join("");
+  // Reasoning models such as Qwen3 may put their thinking inline
+  return text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 }
 
 // Cohere (embeddings + rerank)
@@ -200,20 +265,31 @@ async function cohereRequest(path: string, body: unknown): Promise<any> {
 // into the asymmetric spaces it was trained for.
 async function embed(
   texts: string[],
-  inputType: "search_document" | "search_query"
+  inputType: "search_document" | "search_query",
+  config: EmbeddingConfig
 ): Promise<number[][]> {
   const vectors: number[][] = [];
+  const { outputDimension } = EMBEDDING_MODELS[config.model];
 
   for (let i = 0; i < texts.length; i += EMBED_BATCH_SIZE) {
+    // output_dimension is only sent to models that take it, so the v3 request
+    // (and therefore its cache key) is byte-for-byte what it was before.
     const data = await cohereRequest("embed", {
       texts: texts.slice(i, i + EMBED_BATCH_SIZE),
-      model: EMBEDDING_MODEL,
+      model: config.model,
       input_type: inputType,
       embedding_types: ["float"],
+      ...(outputDimension ? { output_dimension: config.dim } : {}),
     });
     vectors.push(...data.embeddings.float);
   }
 
+  const wrongSize = vectors.find((v) => v?.length !== config.dim);
+  if (wrongSize) {
+    throw new Error(
+      `${config.model} returned ${wrongSize?.length ?? 0}-d vectors, expected ${config.dim}.`
+    );
+  }
   return vectors;
 }
 
@@ -418,7 +494,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
 // the 48-page NIST PDF, ~7 sentence calls on top of 2 for the chunks.
 async function chunkSemantic(documents: Document[]): Promise<Document[]> {
   const pages = documents.map((doc) => splitIntoSentences(doc.pageContent));
-  const vectors = await embed(pages.flat(), "search_document");
+  const vectors = await embed(pages.flat(), "search_document", getEmbeddingConfig());
 
   // Similarity between each sentence and the next one on the same page
   let offset = 0;
@@ -596,18 +672,59 @@ export function buildQuerySparseVector(text: string): SparseVector {
 
 // Indexing
 
-async function createNotebookCollection(collectionName: string): Promise<void> {
-  await getQdrantClient().createCollection(collectionName, {
+// Each collection records the embedding model it was built with in its
+// Qdrant metadata (Qdrant >= 1.16). Queries and later uploads read it back, so
+// changing EMBEDDING_MODEL only affects new notebooks and never mixes vector
+// spaces inside one collection. Cached per process: it can't change while the
+// collection exists.
+const collectionEmbeddings = new Map<string, EmbeddingConfig>();
+
+async function createNotebookCollection(
+  collectionName: string,
+  embedding: EmbeddingConfig
+): Promise<void> {
+  collectionEmbeddings.delete(collectionName);
+  // Goes through api() because the client's createCollection() wrapper
+  // (js-client-rest 1.18) accepts `metadata` in its type but doesn't send it.
+  await getQdrantClient().api().createCollection({
+    collection_name: collectionName,
     vectors: {
       [DENSE_VECTOR_NAME]: {
-        size: EMBEDDING_DIM,
+        size: embedding.dim,
         distance: "Cosine",
       },
     },
     sparse_vectors: {
       [SPARSE_VECTOR_NAME]: { modifier: "idf" },
     },
+    metadata: { embedding },
   });
+}
+
+export async function getCollectionEmbedding(collectionName: string): Promise<EmbeddingConfig> {
+  const cached = collectionEmbeddings.get(collectionName);
+  if (cached) return cached;
+
+  const { config } = await getQdrantClient().getCollection(collectionName);
+  const vectors = config.params.vectors as Record<string, { size: number }> | undefined;
+  const size = vectors?.[DENSE_VECTOR_NAME]?.size;
+  const stored = (config.metadata as { embedding?: EmbeddingConfig } | null | undefined)?.embedding;
+
+  // Collections from before this setting existed have no metadata; the only
+  // model then was embed-english-v3.0 at 1024-d.
+  const embedding = stored
+    ? resolveEmbedding(stored.model, stored.dim)
+    : DEFAULT_EMBEDDING;
+  if (size !== embedding.dim) {
+    throw new Error(
+      `Collection ${collectionName} has ${size}-d vectors but ` +
+      `${stored ? "its metadata says" : "has no embedding metadata, so it is assumed to be"} ` +
+      `${formatEmbedding(embedding)}. Re-index the documents into a new collection.`
+    );
+  }
+
+  collectionEmbeddings.set(collectionName, embedding);
+  return embedding;
 }
 
 export async function indexChunks(
@@ -620,17 +737,18 @@ export async function indexChunks(
 
   const client = getQdrantClient();
 
-  // A notebook is one collection; later documents are appended to it
+  // A notebook is one collection; later documents are appended to it, and
+  // are embedded with the collection's model even if the setting changed since.
   const { exists } = await client.collectionExists(collectionName);
-  if (!exists) await createNotebookCollection(collectionName);
-
+  if (!exists) await createNotebookCollection(collectionName, getEmbeddingConfig());
+  const embedding = await getCollectionEmbedding(collectionName);
 
   // Context headers (if any) are only used for search; the stored text and
   // what the LLM later sees stay the original chunk.
   const texts = chunks.map((c) =>
     c.metadata.contextHeader ? `${c.metadata.contextHeader}\n${c.pageContent}` : c.pageContent
   );
-  const denseVectors = await embed(texts, "search_document");
+  const denseVectors = await embed(texts, "search_document", embedding);
 
   if (denseVectors.length !== chunks.length || denseVectors.some((v) => !v?.length)) {
     throw new Error(
@@ -718,6 +836,7 @@ export function isNotebookCollection(collectionName: string): boolean {
 
 export async function deleteCollection(collectionName: string): Promise<void> {
   if (!isNotebookCollection(collectionName)) return;
+  collectionEmbeddings.delete(collectionName);
   try {
     await getQdrantClient().deleteCollection(collectionName);
   } catch (error) {
@@ -869,7 +988,10 @@ export async function hybridSearch(
 ): Promise<Document[]> {
   const useDense = mode !== "sparse";
   const useSparse = mode !== "dense";
-  const queryVectors = useDense ? await embed(queries, "search_query") : [];
+  // Queries must land in the same vector space as the stored chunks
+  const queryVectors = useDense
+    ? await embed(queries, "search_query", await getCollectionEmbedding(collectionName))
+    : [];
 
   const prefetch = queries.flatMap((query, i) => {
     const sparse = buildQuerySparseVector(query);

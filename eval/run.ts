@@ -1,11 +1,13 @@
 // SourceSage evaluation CLI.
 //
-//   npm run eval -- retrieval [--chunking=fixed] [--headers]   ranking quality per pipeline config (no generation)
+//   npm run eval -- retrieval [--chunking=fixed] [--headers] [--embedding=embed-v4.0@512]
+//                                                  ranking quality per pipeline config (no generation)
 //   npm run eval -- generation                     answer quality, judged by a second LLM
 //   npm run eval -- latency                        uncached end-to-end timings on a question subset
 //   npm run eval -- report                         rebuild eval/RESULTS.md from eval/results/*.json
 //
 // Options: --configs=a,b  --questions=id1,id2  --limit=N
+// --chunking, --headers and --embedding pick the index, and work with every suite.
 //
 // Every config calls the same retrieveChunks()/answerQuestion() the app uses,
 // with stages switched on or off through PipelineOptions.
@@ -14,11 +16,15 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join } from "path";
 import {
   ChunkingStrategy,
+  DEFAULT_EMBEDDING,
   DEFAULT_PIPELINE,
+  EmbeddingConfig,
   PipelineOptions,
   answerQuestion,
   configureRuntime,
+  formatEmbedding,
   isNotFoundAnswer,
+  parseEmbedding,
   retrieveChunks,
 } from "../lib/rag";
 import {
@@ -96,6 +102,7 @@ type Args = {
   suite: string;
   chunking: ChunkingStrategy;
   contextHeaders: boolean;
+  embedding: EmbeddingConfig;
   configs?: string[];
   questionIds?: string[];
   limit?: number;
@@ -110,6 +117,9 @@ function parseArgs(): Args {
     suite,
     chunking: (flags.chunking as ChunkingStrategy) || "sentence-window",
     contextHeaders: "headers" in flags,
+    // Not read from EMBEDDING_MODEL: a run without the flag is always the
+    // baseline, whatever .env.local says, so result files stay comparable.
+    embedding: flags.embedding ? parseEmbedding(flags.embedding) : DEFAULT_EMBEDDING,
     configs: flags.configs?.split(","),
     questionIds: flags.questions?.split(","),
     limit: flags.limit ? Number(flags.limit) : undefined,
@@ -134,7 +144,7 @@ function selectConfigs(all: Record<string, PipelineOptions>, args: Args) {
 // would make that question impossible to score.
 async function prepareCollections(questions: Question[], args: Args) {
   const { chunking, contextHeaders } = args;
-  const variant = indexVariant(chunking, contextHeaders);
+  const variant = indexVariant(chunking, contextHeaders, args.embedding);
   const collections: Record<string, string> = {};
   const chunkCounts: Record<string, number> = {};
 
@@ -182,9 +192,10 @@ function save(name: string, data: { configs?: Record<string, unknown>; [key: str
   writeFileSync(path, JSON.stringify(merged, null, 2));
 }
 
-function useEvalRuntime(cached: boolean) {
+function useEvalRuntime(cached: boolean, args: Args) {
   configureRuntime({
     strict: true,
+    embedding: args.embedding,
     maxRetries: 8,
     llmCache: cached ? new FileLLMCache() : undefined,
     apiCache: cached ? apiCache : undefined,
@@ -194,7 +205,7 @@ function useEvalRuntime(cached: boolean) {
 // Suites
 
 async function runRetrieval(args: Args) {
-  useEvalRuntime(true);
+  useEvalRuntime(true, args);
   const questions = selectQuestions(args).filter((q) => q.type !== "unanswerable");
   const { collections, chunkCounts } = await prepareCollections(questions, args);
   const configs: Record<string, unknown> = {};
@@ -241,9 +252,10 @@ async function runRetrieval(args: Args) {
     };
   }
 
-  save(`retrieval-${indexVariant(args.chunking, args.contextHeaders)}`, {
+  save(`retrieval-${indexVariant(args.chunking, args.contextHeaders, args.embedding)}`, {
     suite: "retrieval",
-    chunking: indexVariant(args.chunking, args.contextHeaders),
+    chunking: indexVariant(args.chunking, args.contextHeaders, args.embedding),
+    embedding: formatEmbedding(args.embedding),
     chunkCounts,
     questionCount: questions.length,
     generatedAt: new Date().toISOString(),
@@ -252,7 +264,7 @@ async function runRetrieval(args: Args) {
 }
 
 async function runGeneration(args: Args) {
-  useEvalRuntime(true);
+  useEvalRuntime(true, args);
   const questions = selectQuestions(args);
   const { collections } = await prepareCollections(questions, args);
   const configs: Record<string, unknown> = {};
@@ -317,9 +329,10 @@ async function runGeneration(args: Args) {
     };
   }
 
-  save(`generation-${indexVariant(args.chunking, args.contextHeaders)}`, {
+  save(`generation-${indexVariant(args.chunking, args.contextHeaders, args.embedding)}`, {
     suite: "generation",
-    chunking: indexVariant(args.chunking, args.contextHeaders),
+    chunking: indexVariant(args.chunking, args.contextHeaders, args.embedding),
+    embedding: formatEmbedding(args.embedding),
     judgeModel: JUDGE_MODEL,
     questionCount: questions.length,
     generatedAt: new Date().toISOString(),
@@ -328,7 +341,7 @@ async function runGeneration(args: Args) {
 }
 
 async function runLatency(args: Args) {
-  useEvalRuntime(false); // real network calls only
+  useEvalRuntime(false, args); // real network calls only
   // A fixed spread of question types: every 6th question
   const questions = args.questionIds || args.limit
     ? selectQuestions(args)
@@ -354,9 +367,10 @@ async function runLatency(args: Args) {
     };
   }
 
-  save(`latency-${indexVariant(args.chunking, args.contextHeaders)}`, {
+  save(`latency-${indexVariant(args.chunking, args.contextHeaders, args.embedding)}`, {
     suite: "latency",
-    chunking: indexVariant(args.chunking, args.contextHeaders),
+    chunking: indexVariant(args.chunking, args.contextHeaders, args.embedding),
+    embedding: formatEmbedding(args.embedding),
     questions: questions.map((q) => q.id),
     generatedAt: new Date().toISOString(),
     configs,

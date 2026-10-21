@@ -52,7 +52,7 @@ Real, uncached end-to-end timings on a fixed subset of questions (every 6th), wi
 - **Same code as the app.** Each config calls the app's own `retrieveChunks()` / `answerQuestion()` with stages switched on or off through `PipelineOptions`. There's no separate re-implementation that could drift from production.
 - **Strict mode.** In the app, a failing stage (rerank, grading, …) falls back quietly. In the eval, a failure is recorded as an error, because a silent fallback would make a config look better or worse than it is.
 - **Caching.** Every embedding, rerank and LLM response is cached on disk (`eval/.cache`, keyed by the exact request). Re-runs are free and reproducible, and configs that share a stage reuse the same result: the query rewrites used by `hybrid+multiquery` are the same ones used by `full`. This matters on free API tiers (Groq: 8K tokens per minute; Cohere trial: 10 reranks per minute and 1,000 calls per month).
-- **Indexing.** Each document is indexed once per chunking strategy into its own Qdrant collection and reused on later runs. Before running, the harness checks that every evidence quote can be found in at least one chunk; otherwise that question couldn't be scored.
+- **Indexing.** Each document is indexed once per index variant (chunking strategy, `--headers`, `--embedding`) into its own Qdrant collection and reused on later runs. Without `--embedding` the baseline `embed-english-v3.0@1024` is used, regardless of `EMBEDDING_MODEL` in `.env.local`, and the variant name has no embedding suffix. Before running, the harness checks that every evidence quote can be found in at least one chunk; otherwise that question couldn't be scored.
 
 ## Running it
 
@@ -60,6 +60,7 @@ Real, uncached end-to-end timings on a fixed subset of questions (every 6th), wi
 npm run eval -- retrieval                      # sentence-window chunking
 npm run eval -- retrieval --chunking=fixed     # the original 1000/200-character chunking
 npm run eval -- retrieval --chunking=semantic  # cut where sentence embeddings change topic (max 1000 chars)
+npm run eval -- retrieval --embedding=embed-v4.0@512   # another embedding model / vector size
 npm run eval -- generation
 npm run eval -- latency
 npm run eval -- report                         # rebuild RESULTS.md
