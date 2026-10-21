@@ -32,6 +32,7 @@ import {
   ensureIndexed,
   indexVariant,
   indexedText,
+  llmText,
   judgeAnswer,
   loadChunks,
   loadDocuments,
@@ -203,10 +204,15 @@ async function runRetrieval(args: Args) {
     for (const [i, q] of questions.entries()) {
       const { candidates, queries } = await retrieveChunks(collections[q.doc], q.question, options);
       const metrics = retrievalMetrics(q, candidates);
+      const seen = retrievalMetrics(q, candidates, llmText);
       rows.push({
         id: q.id,
         type: q.type,
         ...metrics,
+        llmHit: seen.hit,
+        llmRecall: seen.recall,
+        // Size of the context the generator would get: the "budget" behind the recall
+        contextChars: candidates.reduce((sum, c) => sum + llmText(c).length, 0),
         queries,
         retrieved: candidates.map((c) => ({
           chunk: c.metadata.chunk,
@@ -224,6 +230,10 @@ async function runRetrieval(args: Args) {
         hitAt5: mean(rows.map((r) => r.hit)),
         recallAt5: mean(rows.map((r) => r.recall)),
         mrrAt5: mean(rows.map((r) => r.reciprocalRank)),
+        llmHitAt5: mean(rows.map((r) => r.llmHit)),
+        llmRecallAt5: mean(rows.map((r) => r.llmRecall)),
+        llmRecallMultiHop: mean(rows.filter((r) => r.type === "multi_hop").map((r) => r.llmRecall)),
+        meanContextChars: mean(rows.map((r) => r.contextChars)),
         recallByType: byType(rows, (s) => mean(s.map((r) => r.recall))),
         mrrByType: byType(rows, (s) => mean(s.map((r) => r.reciprocalRank))),
       },
@@ -387,8 +397,10 @@ function buildReport() {
       "",
       `Chunks: ${Object.entries(data.chunkCounts).map(([d, n]) => `${d} ${n}`).join(", ")}.`,
       "",
+      "Searched-unit columns score the chunk that was searched; LLM-context columns score the text the generator receives (the parent window for sentence-window), with its average size.",
+      "",
       table(
-        ["Config", "Hit@5", "Recall@5", "MRR@5", "Recall factual", "Recall keyword", "Recall multi-hop"],
+        ["Config", "Hit@5", "Recall@5", "MRR@5", "Recall factual", "Recall keyword", "Recall multi-hop", "LLM-context recall", "LLM-context multi-hop", "Context size"],
         Object.entries<any>(data.configs).map(([name, c]) => [
           name,
           pct(c.summary.hitAt5),
@@ -397,6 +409,9 @@ function buildReport() {
           pct(c.summary.recallByType.factual),
           pct(c.summary.recallByType.keyword),
           pct(c.summary.recallByType.multi_hop),
+          pct(c.summary.llmRecallAt5),
+          pct(c.summary.llmRecallMultiHop),
+          c.summary.meanContextChars ? `${Math.round(c.summary.meanContextChars)} chars` : "–",
         ])
       )
     );

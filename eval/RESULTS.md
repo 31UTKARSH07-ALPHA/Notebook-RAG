@@ -14,3 +14,16 @@ Chunks: nist-ai-rmf 334, lost-in-the-middle 212.
 | hybrid+multiquery | 85.4% | 80.2% | 0.661 | 78.6% | 100.0% | 65.0% |
 | hybrid+rerank | 87.5% | 81.3% | 0.700 | 82.1% | 100.0% | 60.0% |
 | hybrid+multiquery+rerank | 89.6% | 84.4% | 0.714 | 85.7% | 100.0% | 65.0% |
+
+## Retrieval: fixed chunking (48 answerable questions)
+
+Chunks: nist-ai-rmf 150, lost-in-the-middle 86.
+
+| Config | Hit@5 | Recall@5 | MRR@5 | Recall factual | Recall keyword | Recall multi-hop |
+|---|---:|---:|---:|---:|---:|---:|
+| dense | 89.6% | 81.9% | 0.685 | 82.1% | 100.0% | 63.3% |
+| bm25 | 85.4% | 77.4% | 0.674 | 75.0% | 100.0% | 61.7% |
+| hybrid | 97.9% | 93.1% | 0.818 | 96.4% | 100.0% | 76.7% |
+| hybrid+multiquery | 95.8% | 92.0% | 0.803 | 96.4% | 100.0% | 71.7% |
+| hybrid+rerank | 97.9% | 93.1% | 0.864 | 96.4% | 100.0% | 76.7% |
+| hybrid+multiquery+rerank | 97.9% | 93.1% | 0.864 | 96.4% | 100.0% | 76.7% |

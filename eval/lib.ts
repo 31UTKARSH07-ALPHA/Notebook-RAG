@@ -185,8 +185,18 @@ export function indexedText(chunk: Document): string {
 }
 
 // Retrieval metrics for one question over a ranked list of chunks
-export function retrievalMetrics(question: Question, ranked: Document[]) {
-  const texts = ranked.map(indexedText);
+// By default chunks are scored on the indexed (searched) text. Passing
+// llmText scores what the generator actually receives instead: for
+// sentence-window that is the wider parent window, which makes strategies
+// with different chunk sizes comparable.
+export const llmText = (chunk: Document) => chunk.pageContent;
+
+export function retrievalMetrics(
+  question: Question,
+  ranked: Document[],
+  textOf: (chunk: Document) => string = indexedText
+) {
+  const texts = ranked.map(textOf);
   const found = question.evidence.map((quote) => texts.some((t) => chunkContainsEvidence(t, quote)));
   const firstRelevant = texts.findIndex((t) =>
     question.evidence.some((quote) => chunkContainsEvidence(t, quote))
