@@ -121,6 +121,7 @@ app/
   api/upload/route.ts      parse → chunk → embed → index (new notebook or add to one)
   api/ask/route.ts         streams stage events + result as NDJSON
   api/notebook/route.ts    deletes a notebook
+  api/demo/route.ts        tells the UI whether demo mode (and which limits) is on
 lib/
   rag.ts                   the whole RAG pipeline
 eval/
@@ -144,6 +145,13 @@ tests/                     offline unit tests
    QDRANT_COLLECTION_PREFIX=sourcesage
    EMBEDDING_MODEL=embed-english-v3.0   # optional; or embed-v4.0
    EMBEDDING_DIM=1024                   # optional; embed-v4.0 takes 1536, 1024, 512 or 256
+
+   # Public demo only (leave unset for local use and the evaluation)
+   DEMO_MODE=true                       # turns on the limits below and the demo note in the UI
+   DEMO_MAX_UPLOADS_PER_DAY=3           # per visitor (IP)
+   DEMO_MAX_QUESTIONS_PER_DAY=20        # per visitor (IP)
+   DEMO_MAX_QUESTIONS_TOTAL_PER_DAY=300 # all visitors together
+   NOTEBOOK_TTL_HOURS=24                # notebooks older than this are deleted
    ```
 
    The embedding settings apply to new notebooks only. Each collection records the model and size it was built with in its Qdrant metadata, and queries and later uploads use that, so two vector spaces never mix. Smaller vectors take less space (4 bytes per dimension: 6 KB per chunk at 1536, 1 KB at 256).
@@ -167,9 +175,23 @@ tests/                     offline unit tests
 
 Deploy to Vercel with the same environment variables, using Qdrant Cloud for `QDRANT_URL`.
 
+### Live demo
+
+Live demo: _coming soon_
+
+A public deployment spends the owner's free API quotas, so it runs with `DEMO_MODE=true`:
+
+- **Usage limits.** Each visitor (by IP) gets `DEMO_MAX_UPLOADS_PER_DAY` uploads (default 3) and `DEMO_MAX_QUESTIONS_PER_DAY` questions (default 20) per UTC day, and all visitors together share `DEMO_MAX_QUESTIONS_TOTAL_PER_DAY` questions (default 300). Over the limit, the API returns HTTP 429 with a message the UI shows. Code: `lib/demo-limits.ts`.
+- **Upload size.** Files over 4 MB are rejected in the browser before uploading and again by the server (Vercel caps request bodies at ~4.5 MB). Code: `lib/upload-limits.ts`.
+- **Notebook expiry.** Each new notebook gets a `createdAt` in its Qdrant collection metadata. On upload, at most once an hour per server instance, a background cleanup deletes notebooks older than `NOTEBOOK_TTL_HOURS` (default 24). Evaluation collections (`*_eval_*`) are never touched. Code: `lib/notebook-cleanup.ts`, `lib/notebook-ttl.ts`.
+- **A note in the UI** states the limits, the expiry and asks visitors not to upload private documents.
+
+**Limitation:** the counters are kept in memory. On Vercel each warm instance has its own counters, and they reset on a cold start or redeploy, so the limits are best-effort: enough against casual overuse and runaway loops, not against a determined abuser. Strict limits need a shared store such as Upstash Redis. Without `DEMO_MODE`, nothing is limited and nothing expires (unless `NOTEBOOK_TTL_HOURS` is set).
+
 ## Limitations
 
 - **Free-tier limits.** Groq's free tier allows 200K tokens per model per day, and Cohere's trial key 1,000 calls per month. Bulk work like the full answer-quality evaluation needs a paid tier or several days.
 - **Latency.** The default pipeline takes 6.5 s at p50 (naive retrieval: 2.7 s), so the UI streams stage progress. About half of that is the three post-retrieval checks (grading, compression, grounding check). The pending answer-quality comparison will show whether they earn it.
 - **Conversation memory** covers the last 3 exchanges and lives in the browser.
 - **No OCR.** Scanned (image-only) PDFs aren't supported.
+- **Demo limits are per server instance** (in memory), so they're best-effort; see [Live demo](#live-demo).
