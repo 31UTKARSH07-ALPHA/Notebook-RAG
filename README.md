@@ -1,5 +1,7 @@
 # SourceSage
 
+[![CI](https://github.com/31UTKARSH07-ALPHA/Notebook-RAG/actions/workflows/ci.yml/badge.svg)](https://github.com/31UTKARSH07-ALPHA/Notebook-RAG/actions/workflows/ci.yml)
+
 Upload PDFs or text files into a notebook and ask questions across them. Every answer comes only from your documents and shows the passages it used.
 
 SourceSage is a NotebookLM-style retrieval-augmented generation (RAG) app. Every stage of its pipeline was chosen by **measuring it**: a labeled evaluation set of 56 questions over two real documents scores each retrieval and answering configuration. See [eval/RESULTS.md](eval/RESULTS.md) for the numbers and [DECISIONS.md](DECISIONS.md) for the reasoning.
@@ -94,7 +96,7 @@ The full method and its limitations are in [eval/README.md](eval/README.md).
 npm test
 ```
 
-55 offline unit tests (vitest; no API keys or network) cover the deterministic parts:
+55 offline unit tests (vitest; no API keys or network) cover the deterministic parts. GitHub Actions runs them, plus the type check and production build, on every push to `main` and every pull request (`.github/workflows/ci.yml`):
 - PDF text cleanup and sentence splitting
 - all three chunking strategies
 - BM25 vectors, including hash collisions
