@@ -518,3 +518,16 @@ All four use the default retrieval (hybrid + rerank + decomposition), so any dif
 - **One more option to maintain,** and a threshold tuned on two documents. Other document types may score differently under the reranker.
 - **The cut-off is tied to `rerank-v3.5`.** Changing the rerank model means re-running the sweep.
 - **The cut-off only works when reranking is on.** Without rerank scores it keeps everything.
+
+## 29. Make search results repeatable: break ties by id
+
+**Problem.** Reciprocal Rank Fusion often gives several chunks *exactly* the same score, and Qdrant returns tied points in no fixed order. The same question could therefore produce a different top-20 order on each call. Three things followed from that:
+- **Small metric wobble:** plain hybrid MRR came out 0.808, 0.818 or 0.820 across identical runs of identical code.
+- **Wasted calls:** the reranker received the same chunks in a different order, which is a different request, so it missed the eval cache. Only 16 of 56 questions replayed from cache, and each re-run spent new Cohere calls.
+- **Inconsistency for users:** two people asking the same question could get differently ordered sources.
+
+**Decision.** `hybridSearch()` fetches 10 extra candidates, sorts by score and then by point id (`orderFusedPoints()`), and keeps the top N. Fetching a few extra matters: ties at the cut-off are decided by id, not by whichever tied point Qdrant happened to return.
+
+**Verified.** The same search, run 4 times for each of 3 test questions, now returns the identical order every time. A unit test checks that tie-breaking doesn't depend on input order.
+
+**Trade-off.** Re-ordering the reranker's input changes its cache keys, so cached rerank results from earlier runs aren't reused once. From then on, configs that share retrieval also share their rerank calls.

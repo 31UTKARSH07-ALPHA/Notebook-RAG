@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Document } from "@langchain/core/documents";
-import { interleaveRankings, parseSubQuestions } from "../lib/rag";
+import { interleaveRankings, orderFusedPoints, parseSubQuestions } from "../lib/rag";
 
 const doc = (id: string) => new Document({ id, pageContent: id, metadata: {} });
 const ids = (docs: Document[]) => docs.map((d) => d.id);
@@ -39,5 +39,27 @@ describe("interleaveRankings", () => {
 
   it("stops when every list is exhausted", () => {
     expect(ids(interleaveRankings([[doc("a")], []], 5))).toEqual(["a"]);
+  });
+});
+
+describe("orderFusedPoints", () => {
+  it("breaks score ties by id so the order never depends on Qdrant", () => {
+    const a = [
+      { id: "c", score: 0.5 },
+      { id: "a", score: 0.5 },
+      { id: "b", score: 0.9 },
+    ];
+    const b = [a[1], a[2], a[0]];
+    expect(orderFusedPoints(a, 3).map((p) => p.id)).toEqual(["b", "a", "c"]);
+    expect(orderFusedPoints(b, 3)).toEqual(orderFusedPoints(a, 3));
+  });
+
+  it("cuts to the limit after sorting, so ties at the cut-off are decided by id", () => {
+    const points = [
+      { id: "z", score: 0.3 },
+      { id: "y", score: 0.3 },
+      { id: "x", score: 0.8 },
+    ];
+    expect(orderFusedPoints(points, 2).map((p) => p.id)).toEqual(["x", "y"]);
   });
 });
