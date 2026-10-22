@@ -71,7 +71,7 @@ flowchart TD
 7. **Generation.** Groq `openai/gpt-oss-120b` (configurable with `GROQ_MODEL`) answers only from numbered sources, with `[n]` citations.
 8. **Grounding check.** A grader checks every claim against the sources. An ungrounded answer is regenerated once with the grader's feedback, and the verdict is shown in the UI.
 
-Every stage can be switched on or off with `PipelineOptions` (`lib/rag.ts`). That's how the evaluation measures each stage using the app's own code.
+Every stage can be switched on or off with `PipelineOptions` (`lib/rag/types.ts`). That's how the evaluation measures each stage using the app's own code.
 
 **Live progress.** `/api/ask` streams newline-delimited JSON: a `{"type":"stage"}` event as each stage starts, then a `{"type":"result"}` (or `{"type":"error"}`) event. Answers aren't streamed token by token, because a draft that fails the grounding check is replaced.
 
@@ -122,7 +122,22 @@ app/
   api/ask/route.ts         streams stage events + result as NDJSON
   api/notebook/route.ts    deletes a notebook
 lib/
-  rag.ts                   the whole RAG pipeline
+  rag/                     the RAG pipeline, one module per concern
+    index.ts               public API: everything else imports from "@/lib/rag"
+    types.ts               shared types (PipelineOptions, AnswerResult, stages)
+    config.ts              default pipeline, runtime config (strict mode, caches), env helpers
+    llm.ts                 Groq chat models and reading their replies
+    cohere.ts              Cohere requests (retries, cache), embedding models, embed(), rerank()
+    parsing.ts             PDF/.txt → one Document per page, text cleanup
+    chunking.ts            fixed-size (default), sentence-window and semantic chunking
+    bm25.ts                tokenizing and BM25 sparse vectors
+    store.ts               Qdrant client, notebook collections, indexing
+    context-headers.ts     optional per-page context headers (eval experiment)
+    chat.ts                history capping and condensing follow-up questions
+    retrieval.ts           decomposition, query rewrites, hybrid search, retrieveChunks()
+    postprocess.ts         relevance grading and context compression
+    generation.ts          grounded prompt, answer, citations, hallucination grader
+    pipeline.ts            answerQuestion(): condense → retrieve → generate → check → retry
 eval/
   questions.json           56 labeled questions
   documents.json           evaluation PDFs (downloaded and hash-checked at run time)

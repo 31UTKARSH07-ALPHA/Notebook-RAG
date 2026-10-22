@@ -409,3 +409,18 @@ All numbers below come from `eval/` (method in [eval/README.md](eval/README.md),
   - **The slow p90 is a multi-part question.**
   - **Per-stage means for `full`:** search 1.6 s, rerank 1.4 s, decomposition 0.8 s, relevance grading 1.3 s, compression 1.0 s, generation 0.7 s, grounding check 0.8 s.
   - **The three post-retrieval LLM checks are about half the latency.** That's why the pending answer-quality comparison matters. If `hybrid+rerank` (no grading, compression or grounding check) answers about as well as `full`, the next step is to make those stages conditional, e.g. replace the grader with a rerank-score threshold.
+
+## 27. Split the pipeline into modules
+
+**Before.** All of the RAG code lived in one ~1,600-line `lib/rag.ts`: config, Cohere calls, PDF parsing, chunking, BM25, Qdrant storage, context headers, retrieval, grading and compression, generation, chat follow-ups and the pipeline itself. That came from the original single-file design, and it was kept through the fixes above so that each change stayed a small, reviewable diff.
+
+**Problems.**
+- **Hard to read.** Finding how one stage works meant scrolling past every other stage.
+- **Hard to test in isolation.** Every test imported the whole pipeline, including the Qdrant and Groq clients.
+- **Parallel work conflicted.** Changes to unrelated stages (say, chunking and generation) touched the same file and kept producing merge conflicts.
+
+**Decision.** `lib/rag/` with one module per concern: `types`, `config`, `llm`, `cohere`, `parsing`, `chunking`, `bm25`, `store`, `context-headers`, `chat`, `retrieval`, `postprocess`, `generation` and `pipeline` (see the README's project structure). `lib/rag/index.ts` re-exports exactly the old public API, so `@/lib/rag` and `../lib/rag` imports in the app, the eval harness and the tests didn't change. Imports only point "downwards" (`types` and `config` import nothing from the others), so there are no circular imports.
+
+**How it was verified.** The code was moved, not rewritten: only imports and `export` on helpers now shared between modules changed. All 55 unit tests, `tsc` and `next build` pass. The retrieval eval was re-run from the response cache: `hybrid+rerank+decompose` reproduces the saved numbers exactly, and `hybrid` and `hybrid+rerank` have identical hit and recall. The only difference is a small MRR shift on `hybrid`, which the unchanged pre-refactor code shows too between runs: Qdrant doesn't order tied RRF scores deterministically.
+
+**Trade-off.** Fifteen files instead of one, and a reader has to follow imports between them. The header comment on each module says what it owns, to keep that cheap.
