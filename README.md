@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/31UTKARSH07-ALPHA/SourceSage/actions/workflows/ci.yml/badge.svg)](https://github.com/31UTKARSH07-ALPHA/SourceSage/actions/workflows/ci.yml)
 
+**Live demo: https://sourcesage-mu.vercel.app** (free-tier demo: a few uploads and questions per visitor per day; notebooks are deleted after 24 h)
+
 Upload PDFs or text files into a notebook and ask questions across them. Every answer comes only from your documents and shows the passages it used.
 
 SourceSage is a NotebookLM-style retrieval-augmented generation (RAG) app. Every stage of its pipeline was chosen by **measuring it**: a labeled evaluation set of 56 questions over two real documents scores each retrieval and answering configuration. See [eval/RESULTS.md](eval/RESULTS.md) for the numbers and [DECISIONS.md](DECISIONS.md) for the reasoning.
@@ -192,7 +194,7 @@ Deploy to Vercel with the same environment variables, using Qdrant Cloud for `QD
 
 ### Live demo
 
-Live demo: _coming soon_
+Live demo: **https://sourcesage-mu.vercel.app**
 
 A public deployment spends the owner's free API quotas, so it runs with `DEMO_MODE=true`:
 
