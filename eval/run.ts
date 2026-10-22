@@ -4,6 +4,8 @@
 //                                                  ranking quality per pipeline config (no generation)
 //   npm run eval -- generation                     answer quality, judged by a second LLM
 //   npm run eval -- latency                        uncached end-to-end timings on a question subset
+//   npm run eval -- filter                         rerank-score threshold sweep over the saved
+//                                                  retrieval results (no API calls)
 //   npm run eval -- report                         rebuild eval/RESULTS.md from eval/results/*.json
 //
 // Options: --configs=a,b  --questions=id1,id2  --limit=N
@@ -19,6 +21,7 @@ import {
   DEFAULT_CHUNKING,
   DEFAULT_EMBEDDING,
   DEFAULT_PIPELINE,
+  DEFAULT_RERANK_THRESHOLD,
   EmbeddingConfig,
   PipelineOptions,
   answerQuestion,
@@ -47,6 +50,8 @@ import {
   mean,
   percentile,
   retrievalMetrics,
+  FilterQuestion,
+  sweepThresholds,
 } from "./lib";
 
 const RESULTS_DIR = join(EVAL_DIR, "results");
@@ -104,12 +109,61 @@ const GENERATION_CONFIGS: Record<string, PipelineOptions> = {
     groundingCheck: true,
     topK: 5,
   },
+  // Cheaper alternatives to the three post-retrieval LLM checks (DECISIONS.md
+  // entry 28). All three use the current default retrieval (hybrid + rerank +
+  // decomposition), spelled out. The threshold is the value the filter suite
+  // picked, written as a number so a later change to the app constant can't
+  // silently change this experiment.
+  // The LLM grader replaced by the free rerank-score cut-off; rest as full
+  "full-threshold": {
+    search: "hybrid",
+    multiQuery: false,
+    decompose: true,
+    rerank: true,
+    grade: "rerank-threshold",
+    rerankThreshold: 0.3,
+    compress: true,
+    groundingCheck: true,
+    topK: 5,
+  },
+  // Full without compression: the generator gets the whole chunks
+  "full-no-compress": {
+    search: "hybrid",
+    multiQuery: false,
+    decompose: true,
+    rerank: true,
+    grade: "llm",
+    compress: false,
+    groundingCheck: true,
+    topK: 5,
+  },
+  // Only free checks: rerank-score cut-off, no compression, no grounding
+  // check. After retrieval the answer is the only LLM call (full makes 4+).
+  "lean-threshold": {
+    search: "hybrid",
+    multiQuery: false,
+    decompose: true,
+    rerank: true,
+    grade: "rerank-threshold",
+    rerankThreshold: 0.3,
+    compress: false,
+    groundingCheck: false,
+    topK: 5,
+  },
 };
 
 // Seconds to wait between questions in the latency suite so Groq's free-tier
 // token-per-minute limit is never hit; otherwise retry back-off would be
 // measured as pipeline latency.
-const LATENCY_PAUSE_S: Record<string, number> = { naive: 10, "hybrid+rerank": 10, full: 60, "full-multiquery": 60 };
+const LATENCY_PAUSE_S: Record<string, number> = {
+  naive: 10,
+  "hybrid+rerank": 10,
+  full: 60,
+  "full-multiquery": 60,
+  "full-threshold": 45,
+  "full-no-compress": 45,
+  "lean-threshold": 15,
+};
 
 type Args = {
   suite: string;
@@ -420,6 +474,84 @@ async function runLatency(args: Args) {
   });
 }
 
+// Filter: picks the rerank-score cut-off for grade: "rerank-threshold" from
+// data already on disk, with no API call at all. It reads the reranked top-5
+// (with rerank scores) that the retrieval suite saved per question, looks up
+// each chunk's full text by its chunk number (the saved text is cut to 200
+// characters, too little to find the evidence quotes in; the prefix is
+// checked to make sure the chunk number still points at the same text),
+// labels the chunk relevant iff it contains an evidence quote, and sweeps
+// thresholds. Re-running retrieval from the cache would not work: Qdrant
+// orders tied RRF scores differently between runs, so most rerank requests
+// would no longer match their cached copies.
+
+const FILTER_SOURCE_CONFIGS = ["hybrid+rerank", "hybrid+rerank+decompose"];
+const FILTER_THRESHOLDS = Array.from({ length: 13 }, (_, i) => (i * 5) / 100); // 0.00-0.60
+
+async function runFilter(args: Args) {
+  const variant = indexVariant(args.chunking, args.contextHeaders, args.embedding);
+  const path = join(RESULTS_DIR, `retrieval-${variant}.json`);
+  if (!existsSync(path)) throw new Error(`Run the retrieval suite first: ${path} not found`);
+  const retrieval = JSON.parse(readFileSync(path, "utf8"));
+  const questions = new Map(selectQuestions(args).map((q) => [q.id, q]));
+
+  // Full chunk text by document and chunk number (local parsing only)
+  const chunkText = new Map<string, string>();
+  for (const doc of loadDocuments()) {
+    for (const chunk of await loadChunks(doc, args.chunking, args.contextHeaders)) {
+      chunkText.set(`${doc.id}:${chunk.metadata.chunk}`, indexedText(chunk));
+    }
+  }
+
+  const configs: Record<string, unknown> = {};
+  for (const name of args.configs ?? FILTER_SOURCE_CONFIGS) {
+    const saved = retrieval.configs[name];
+    if (!saved?.options?.rerank) throw new Error(`Filter suite needs a reranked config in ${path}, got "${name}"`);
+
+    const rows: FilterQuestion[] = [];
+    for (const row of saved.questions) {
+      const q = questions.get(row.id);
+      if (!q) continue;
+      rows.push({
+        id: q.id,
+        type: q.type,
+        chunks: row.retrieved.map((c: { chunk: number; rerankScore: number; text: string }) => {
+          const text = chunkText.get(`${q.doc}:${c.chunk}`);
+          if (!text || !text.startsWith(c.text)) {
+            throw new Error(`${q.id}: chunk ${c.chunk} no longer matches the saved text; re-run the retrieval suite`);
+          }
+          if (typeof c.rerankScore !== "number") throw new Error(`${q.id}: chunk ${c.chunk} has no rerank score`);
+          return {
+            rerankScore: c.rerankScore,
+            relevant: q.evidence.some((quote) => chunkContainsEvidence(text, quote)),
+          };
+        }),
+      });
+    }
+
+    configs[name] = {
+      options: saved.options,
+      scored: {
+        answerable: rows.filter((r) => r.type !== "unanswerable").length,
+        unanswerable: rows.filter((r) => r.type === "unanswerable").length,
+        chunks: rows.reduce((n, r) => n + r.chunks.length, 0),
+        relevantChunks: rows.reduce((n, r) => n + r.chunks.filter((c) => c.relevant).length, 0),
+      },
+      sweep: sweepThresholds(rows, FILTER_THRESHOLDS),
+      questions: rows,
+    };
+  }
+
+  save(`filter-${variant}`, {
+    suite: "filter",
+    chunking: variant,
+    source: `retrieval-${variant}.json (generated ${retrieval.generatedAt})`,
+    appThreshold: DEFAULT_RERANK_THRESHOLD,
+    generatedAt: new Date().toISOString(),
+    configs,
+  });
+}
+
 // Report
 
 const pct = (v: number | undefined) => (v === undefined || Number.isNaN(v) ? "–" : `${(v * 100).toFixed(1)}%`);
@@ -521,6 +653,46 @@ function buildReport() {
     );
   }
 
+  for (const file of files.filter((f) => f.startsWith("filter-"))) {
+    const data = read(file.replace(".json", ""));
+    for (const [name, c] of Object.entries<any>(data.configs)) {
+      // The retrieval suite skips unanswerable questions, so usually there are none
+      const withUnanswerable = c.scored.unanswerable > 0;
+      sections.push(
+        "",
+        `## Relevance filter: rerank-score threshold sweep (${data.chunking} chunking, ${name})`,
+        "",
+        `From the saved top-5 of ${c.scored.answerable} answerable` +
+          (withUnanswerable ? ` and ${c.scored.unanswerable} unanswerable` : "") +
+          ` questions: ${c.scored.chunks} chunks, ${c.scored.relevantChunks} of them relevant (contain an evidence quote).` +
+          ` The app's \`DEFAULT_RERANK_THRESHOLD\` is ${data.appThreshold}.`,
+        "",
+        "\"Emptied\": every chunk is dropped, so the pipeline answers \"not found\" without generating. \"Evidence lost\": the question had evidence in the top 5 and every evidence chunk is dropped (emptied or not).",
+        "",
+        table(
+          [
+            "Threshold",
+            "Relevant kept",
+            "Irrelevant dropped",
+            "Chunks kept / question",
+            "Answerable emptied",
+            "Answerable evidence lost",
+            ...(withUnanswerable ? ["Unanswerable emptied"] : []),
+          ],
+          c.sweep.map((r: any) => [
+            r.threshold.toFixed(2),
+            pct(r.relevantKept),
+            pct(r.irrelevantDropped),
+            r.meanChunksKept.toFixed(2),
+            `${r.emptiedAnswerable}/${c.scored.answerable}`,
+            `${r.evidenceLostAnswerable}/${c.scored.answerable}`,
+            ...(withUnanswerable ? [`${r.emptiedUnanswerable}/${c.scored.unanswerable}`] : []),
+          ])
+        )
+      );
+    }
+  }
+
   writeFileSync(join(EVAL_DIR, "RESULTS.md"), sections.join("\n") + "\n");
   console.log(sections.join("\n"));
 }
@@ -530,6 +702,7 @@ async function main() {
   if (args.suite === "retrieval") await runRetrieval(args);
   else if (args.suite === "generation") await runGeneration(args);
   else if (args.suite === "latency") await runLatency(args);
+  else if (args.suite === "filter") await runFilter(args);
   else if (args.suite !== "report") throw new Error(`Unknown suite "${args.suite}"`);
   buildReport();
 }

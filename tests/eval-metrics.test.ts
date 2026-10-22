@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Document } from "@langchain/core/documents";
-import { type Question, chunkContainsEvidence, retrievalMetrics } from "../eval/lib";
+import { type Question, chunkContainsEvidence, retrievalMetrics, sweepThresholds } from "../eval/lib";
 
 describe("chunkContainsEvidence", () => {
   // 9 words, so at least 5 must be in the chunk when the quote is split
@@ -78,5 +78,50 @@ describe("retrievalMetrics", () => {
   it("ignores evidence that is only in the parent window", () => {
     const parentOnly = [chunk("Nothing here.", "The team had twelve members.")];
     expect(retrievalMetrics(question(["the team had twelve members"]), parentOnly).hit).toBe(0);
+  });
+});
+
+describe("sweepThresholds", () => {
+  const questions = [
+    // Evidence in the best chunk only
+    {
+      id: "a1",
+      type: "factual" as const,
+      chunks: [{ rerankScore: 0.9, relevant: true }, { rerankScore: 0.2, relevant: false }],
+    },
+    // Evidence in a weak chunk, behind a stronger irrelevant one
+    {
+      id: "a2",
+      type: "multi_hop" as const,
+      chunks: [{ rerankScore: 0.6, relevant: false }, { rerankScore: 0.35, relevant: true }],
+    },
+    { id: "u1", type: "unanswerable" as const, chunks: [{ rerankScore: 0.25, relevant: false }] },
+  ];
+  const [zero, mid, high] = sweepThresholds(questions, [0, 0.3, 0.5]);
+
+  it("keeps everything at threshold 0", () => {
+    expect(zero).toMatchObject({
+      relevantKept: 1,
+      irrelevantDropped: 0,
+      meanChunksKept: 5 / 3,
+      emptiedAnswerable: 0,
+      evidenceLostAnswerable: 0,
+      emptiedUnanswerable: 0,
+    });
+  });
+
+  it("counts kept, dropped and emptied per threshold", () => {
+    expect(mid).toMatchObject({
+      relevantKept: 1,
+      irrelevantDropped: 2 / 3,
+      emptiedAnswerable: 0,
+      evidenceLostAnswerable: 0,
+      emptiedUnanswerable: 1,
+    });
+  });
+
+  it("counts lost evidence even when other chunks survive", () => {
+    // a2 keeps its irrelevant 0.6 chunk: not emptied, but its evidence is gone
+    expect(high).toMatchObject({ relevantKept: 0.5, emptiedAnswerable: 0, evidenceLostAnswerable: 1 });
   });
 });

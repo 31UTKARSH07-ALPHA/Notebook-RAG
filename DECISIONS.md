@@ -393,10 +393,12 @@ All numbers below come from `eval/` (method in [eval/README.md](eval/README.md),
   The `gpt-oss-120b` generator is strong enough to answer well from mediocre retrieval. The open question is whether relevance grading, compression and the grounding check (~3 extra LLM calls, ~3–4 s) improve on that enough to justify their cost. Commands:
 
   ```bash
-  npm run eval -- generation --configs=naive,hybrid+rerank,full,full-multiquery
-  npm run eval -- latency --configs=naive,hybrid+rerank,full
+  npm run eval -- generation --configs=naive,hybrid+rerank,full,full-threshold,full-no-compress,lean-threshold,full-multiquery
+  npm run eval -- latency --configs=naive,hybrid+rerank,full,full-threshold,full-no-compress,lean-threshold
   npm run eval -- report
   ```
+
+  `full-threshold`, `full-no-compress` and `lean-threshold` are the cheaper alternatives from entry 28. Configs run in the order listed, so the least important one (`full-multiquery`) comes last.
 
   Expect this to take more than one day on Groq's free tier; the cache lets it resume where it stopped.
 - **Latency is now measured, but only on 6 questions** (uncached, `npm run eval -- latency`):
@@ -408,7 +410,7 @@ All numbers below come from `eval/` (method in [eval/README.md](eval/README.md),
 
   - **The slow p90 is a multi-part question.**
   - **Per-stage means for `full`:** search 1.6 s, rerank 1.4 s, decomposition 0.8 s, relevance grading 1.3 s, compression 1.0 s, generation 0.7 s, grounding check 0.8 s.
-  - **The three post-retrieval LLM checks are about half the latency.** That's why the pending answer-quality comparison matters. If `hybrid+rerank` (no grading, compression or grounding check) answers about as well as `full`, the next step is to make those stages conditional, e.g. replace the grader with a rerank-score threshold.
+  - **The three post-retrieval LLM checks are about half the latency.** That's why the pending answer-quality comparison matters. If `hybrid+rerank` (no grading, compression or grounding check) answers about as well as `full`, the next step is to make those stages conditional, e.g. replace the grader with a rerank-score threshold. Entry 28 adds that threshold and the configs that test each cheaper alternative.
 
 ## 26. Running a public demo on free tiers
 
@@ -441,3 +443,78 @@ All numbers below come from `eval/` (method in [eval/README.md](eval/README.md),
 **How it was verified.** The code was moved, not rewritten: only imports and `export` on helpers now shared between modules changed. All 55 unit tests, `tsc` and `next build` pass. The retrieval eval was re-run from the response cache: `hybrid+rerank+decompose` reproduces the saved numbers exactly, and `hybrid` and `hybrid+rerank` have identical hit and recall. The only difference is a small MRR shift on `hybrid`, which the unchanged pre-refactor code shows too between runs: Qdrant doesn't order tied RRF scores deterministically.
 
 **Trade-off.** Fifteen files instead of one, and a reader has to follow imports between them. The header comment on each module says what it owns, to keep that cheap.
+
+## 28. Cheaper alternatives to the post-retrieval LLM checks
+
+**Problem.** After retrieval, the default pipeline makes three more LLM calls: relevance grading (~1.3 s), compression (~1.0 s) and the grounding check (~0.8 s). That's about half of the 6.5 s p50 (entry 25) and most of the Groq tokens per question. Whether they improve the answers is what the pending answer-quality run will show. This entry makes the cheaper alternatives available and measurable before that run, **without changing the default.**
+
+**Decision 1: a relevance filter that needs no LLM.** `PipelineOptions.grade` now takes a mode as well as a boolean:
+
+| `grade` | Filter |
+|---|---|
+| `true` or `"llm"` | The LLM grader (CRAG), as before. `DEFAULT_PIPELINE` still uses `true`. |
+| `"rerank-threshold"` | Drops chunks whose Cohere rerank score is below `rerankThreshold` (default `DEFAULT_RERANK_THRESHOLD` = 0.30). No LLM call; it takes no measurable time. |
+| `false` or `"off"` | Keeps every retrieved chunk. |
+
+- **Same "not found" path.** If no chunk passes, the app answers "not found" without generating, exactly as when the LLM grader rejects everything.
+- **Fails open.** A chunk with no rerank score (reranking off, or the reranker failed and the app fell back to fusion order) is kept, just as a chunk the LLM grader couldn't grade is kept.
+- **Why widen `grade` instead of adding a `gradeMode` field next to it.** One field means there's one source of truth, with no meaningless combinations like `grade: false, gradeMode: "llm"`. Booleans keep their old meaning, so existing callers, eval configs and the options saved in old result files all still read correctly.
+
+**Decision 2: pick the threshold from data already on disk.** `npm run eval -- filter` reads the reranked top-5 that the retrieval suite saved for each answerable question, together with each chunk's rerank score. It then:
+
+1. **Looks up each chunk's full text by its chunk number.** The saved text is cut to 200 characters, too little to find evidence quotes in. Each lookup checks that the saved prefix still matches the chunk.
+2. **Labels a chunk relevant iff it contains an evidence quote.**
+3. **Sweeps the thresholds.**
+
+It makes no API call, so it costs nothing.
+
+**Why not replay retrieval from the response cache instead.** That was tried first, with a cache-only guard that refused any request not already cached. Only 16 of the 56 questions could be replayed. The reason: Qdrant doesn't order tied RRF scores the same way on every call (entry 27). The same question, searched 4 times in a row, gave 2–4 different candidate orders, and sometimes a different 20th candidate. So the request sent to the reranker, and with it the cache key, changes from run to run.
+
+**Measured** on fixed chunks, `hybrid+rerank+decompose` (the default retrieval): 48 answerable questions, 240 top-5 chunks, 65 of them relevant. `hybrid+rerank` gives nearly identical numbers (full tables in `eval/RESULTS.md`).
+
+| Threshold | Relevant chunks kept | Irrelevant chunks dropped | Chunks kept / question | Answerable questions emptied (wrong "not found") | Answerable questions that lose all evidence |
+|---:|---:|---:|---:|---:|---:|
+| 0.00 | 100.0% | 0.0% | 5.00 | 0 | 0 |
+| 0.10 | 100.0% | 9.1% | 4.67 | 0 | 0 |
+| 0.20 | 98.5% | 12.0% | 4.54 | 0 | 0 |
+| 0.25 | 98.5% | 17.7% | 4.33 | 0 | 0 |
+| **0.30** | **98.5%** | **24.6%** | **4.08** | **0** | **0** |
+| 0.35 | 98.5% | 28.0% | 3.96 | 0 | 0 |
+| 0.40 | 95.4% | 34.3% | 3.69 | 1 | 1 |
+| 0.45 | 93.8% | 41.7% | 3.40 | 1 | 2 |
+| 0.50 | 93.8% | 49.1% | 3.13 | 1 | 2 |
+| 0.60 | 83.1% | 61.1% | 2.54 | 4 | 5 |
+
+**Threshold: 0.30.**
+- **It costs no answerable question its evidence.** The only relevant chunk it drops (score 0.12) belongs to a question that has other evidence in its top 5.
+- **It drops about a quarter of the irrelevant chunks.**
+- **The first loss comes at 0.40.** The weakest question (`litm-09`) has its best evidence chunk at 0.374.
+- **0.35 is equally clean on this data,** but it's too close to that first loss for a sample of two documents.
+
+**What the sweep can't show.**
+- **The cut-off is a coarse guard against off-topic chunks, not a replacement for the LLM grader's precision.** Many "irrelevant" chunks are on-topic passages that just don't contain the quote (their median score is 0.51), so no threshold separates them cleanly.
+- **Unanswerable questions aren't covered.** The retrieval suite skips them, so it's unknown how often the cut-off empties their top 5 and short-circuits to "not found". On those questions the generator already refuses on its own (naive baseline: 100% correct abstention, entry 25), so the threshold mainly matters for the answerable ones.
+
+**Decision 3: generation configs for the pending run.** Every config lists all of its options (entry 23), with the threshold written as the number 0.3, not as the app constant:
+
+| Config | Relevance filter | Compression | Grounding check | LLM calls after retrieval |
+|---|---|---|---|---:|
+| `full` (default) | LLM | yes | yes | 4 (+1 retry, +1 recheck) |
+| `full-threshold` | rerank ≥ 0.3 | yes | yes | 3 (+2) |
+| `full-no-compress` | LLM | no | yes | 3 (+2) |
+| `lean-threshold` | rerank ≥ 0.3 | no | no | 1 |
+
+All four use the default retrieval (hybrid + rerank + decomposition), so any difference between them comes from the post-retrieval stages. `naive` and `hybrid+rerank` remain the lower baselines.
+
+**The plan, and what would change the default.** Run the commands in entry 25. With 48 answerable questions, one question is ~2 points, so "the same" means within about 2 questions (~4 points):
+- **If `full-threshold` matches `full`** on correctness, false refusals and correct abstention, the default becomes `grade: "rerank-threshold"`. That saves ~1.3 s and one LLM call per question.
+- **If `full-no-compress` matches `full`,** compression goes. That saves ~1.0 s and up to 5 parallel calls. Compression can also cut out a sentence the answer needed, so it could even lose.
+- **If `lean-threshold` matches `full` on correctness and faithfulness,** the default becomes lean: about 3 s and 3+ LLM calls saved per question. The grounding check stays only if `full` is clearly more faithful (fully-faithful rate higher by more than ~4 points), since its job is catching hallucination rather than raising correctness.
+- **Any config that lowers correct abstention on unanswerable questions doesn't become the default.** Saying "not found" correctly is the product's promise.
+- **Latency** (`npm run eval -- latency`) confirms the savings on the same 6 questions as before.
+- **Watch the Cohere budget.** Because the RRF tie order changes between runs (see above), a generation run can't count on its rerank requests being cached. A config can make up to one rerank call per (sub-)question, about 75 for 56 questions, and the four configs above don't share them reliably. That is more than a trial key's remaining monthly calls. Making the order deterministic, by breaking ties by point id and sending the reranker its documents in a fixed order, would let configs share their rerank calls. That's a separate change, because it also changes every cache key once.
+
+**Trade-off.**
+- **One more option to maintain,** and a threshold tuned on two documents. Other document types may score differently under the reranker.
+- **The cut-off is tied to `rerank-v3.5`.** Changing the rerank model means re-running the sweep.
+- **The cut-off only works when reranking is on.** Without rerank scores it keeps everything.

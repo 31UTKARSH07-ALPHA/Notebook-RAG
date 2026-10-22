@@ -50,13 +50,26 @@ Every answer is graded by an **LLM judge** (`openai/gpt-oss-20b`). It's delibera
 ### Latency (`npm run eval -- latency`)
 Real, uncached end-to-end timings on a fixed subset of questions (every 6th), with per-stage means. The harness pauses between questions so the measurement never includes Groq rate-limit back-off.
 
+### Relevance filter (`npm run eval -- filter`)
+Picks the cut-off for `grade: "rerank-threshold"`, the no-LLM alternative to the relevance grader. It makes **no API calls**. It reads the reranked top 5 that the retrieval suite saved for each answerable question (with each chunk's rerank score) from `results/retrieval-<variant>.json`, for `hybrid+rerank` and `hybrid+rerank+decompose`.
+
+- **Labels.** Each chunk's full text is looked up by its chunk number, because the saved text is cut to 200 characters. A chunk is relevant iff it contains an evidence quote. The suite stops if a chunk number no longer matches the saved text, in which case the retrieval suite has to be re-run.
+- **Sweep.** For each threshold from 0.00 to 0.60, it reports:
+  - the share of relevant chunks kept and of irrelevant chunks dropped;
+  - the mean number of chunks left per question;
+  - how many answerable questions are **emptied** (every chunk dropped, so the app answers "not found" without generating);
+  - how many answerable questions **lose all their evidence** (emptied or not).
+- **Why it doesn't replay retrieval from the cache.** Qdrant orders tied RRF scores differently from run to run, so the request sent to the reranker, and with it the cache key, changes. A replay would call Cohere again for most questions.
+
+Results go to `results/filter-<variant>.json` and a section of RESULTS.md. Unanswerable questions aren't covered, because the retrieval suite doesn't run them.
+
 ## How the harness works
 
 - **Same code as the app.** Each config calls the app's own `retrieveChunks()` / `answerQuestion()` with stages switched on or off through `PipelineOptions`. There's no separate re-implementation that could drift from production.
 - **Strict mode.** In the app, a failing stage (rerank, grading, …) falls back quietly. In the eval, a failure is recorded as an error, because a silent fallback would make a config look better or worse than it is.
 - **Explicit configs.** Every config lists all of its `PipelineOptions` instead of inheriting the app defaults, and the options are saved with each result. Otherwise changing a default (as happened when decomposition became the default) would silently change what an experiment measures. Only `full` deliberately tracks the app's current default.
 - **Results merge.** Running a subset with `--configs` updates those configs in the results file and keeps the others.
-- **Caching.** Every embedding, rerank and LLM response is cached on disk (`eval/.cache`, keyed by the exact request). Re-runs are free and reproducible, and configs that share a stage reuse the same result: the query rewrites used by `hybrid+multiquery` are the same ones used by `full`. This matters on free API tiers. Groq allows 8K tokens per minute and **200K tokens per day per model**; Cohere's trial key allows 10 reranks per minute and 1,000 calls per month. The full answer-quality suite therefore takes more than one day; thanks to the cache it resumes where it stopped.
+- **Caching.** Every embedding, rerank and LLM response is cached on disk (`eval/.cache`, keyed by the exact request). Re-runs are free and reproducible, and configs that share a stage reuse the same result: the query rewrites used by `hybrid+multiquery` are the same ones used by `full`. This matters on free API tiers. Groq allows 8K tokens per minute and **200K tokens per day per model**; Cohere's trial key allows 10 reranks per minute and 1,000 calls per month. The full answer-quality suite therefore takes more than one day; thanks to the cache it resumes where it stopped. One exception: rerank requests often miss the cache. Qdrant orders tied RRF scores differently from run to run, so the document list sent to the reranker changes (DECISIONS.md, entry 28).
 - **Indexing.** Each document is indexed once per index variant (chunking strategy, `--headers`, `--embedding`) into its own Qdrant collection and reused on later runs. Without `--embedding` the baseline `embed-english-v3.0@1024` is used, regardless of `EMBEDDING_MODEL` in `.env.local`, and the variant name has no embedding suffix. Before running, the harness checks that every evidence quote can be found in at least one chunk; otherwise that question couldn't be scored.
 
 ## Running it
@@ -69,6 +82,7 @@ npm run eval -- retrieval --chunking=semantic  # cut where sentence embeddings c
 npm run eval -- retrieval --embedding=embed-v4.0@512   # another embedding model / vector size
 npm run eval -- generation
 npm run eval -- latency
+npm run eval -- filter                         # rerank-score threshold sweep (needs a retrieval run first)
 npm run eval -- report                         # rebuild RESULTS.md
 
 # Options: --configs=dense,hybrid  --questions=nist-01,litm-05  --limit=5

@@ -7,6 +7,7 @@ export type {
   AnswerResult,
   ChatTurn,
   EmbeddingConfig,
+  GradeMode,
   Grounding,
   PipelineOptions,
   PipelineStage,
@@ -60,7 +61,15 @@ export {
   parseSubQuestions,
   retrieveChunks,
 } from "./retrieval";
-export { type ChunkGrade, compressContext, gradeChunks, scoreChunks } from "./postprocess";
+export {
+  type ChunkGrade,
+  DEFAULT_RERANK_THRESHOLD,
+  compressContext,
+  filterByRerankScore,
+  gradeChunks,
+  resolveGradeMode,
+  scoreChunks,
+} from "./postprocess";
 export {
   NOT_FOUND_ANSWER,
   buildGroundedPrompt,

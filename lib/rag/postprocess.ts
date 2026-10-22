@@ -1,13 +1,47 @@
-// Post-retrieval: LLM relevance grading of the retrieved chunks (CRAG) and
-// context compression down to the relevant sentences.
+// Post-retrieval: relevance filtering of the retrieved chunks (LLM grading as
+// in CRAG, or a free cut-off on the rerank score) and context compression
+// down to the relevant sentences.
 
 import { Document } from "@langchain/core/documents";
 import { ChatGroq } from "@langchain/groq";
 import { HumanMessage } from "@langchain/core/messages";
 import { handleStageFailure } from "./config";
 import { getChatModel, messageText } from "./llm";
+import type { GradeMode, PipelineOptions } from "./types";
 
 // Post-retrieval
+
+// Maps the `grade` option to a mode. Booleans are the pre-mode form of the
+// option: true has always meant the LLM grader.
+export function resolveGradeMode(grade: PipelineOptions["grade"]): GradeMode {
+  if (grade === true) return "llm";
+  if (grade === false) return "off";
+  return grade;
+}
+
+// Rerank scores (rerank-v3.5, 0-1) below this are treated as off-topic.
+// Picked offline with `npm run eval -- filter`, which sweeps cut-offs over the
+// saved top-5 of the retrieval eval (DECISIONS.md, entry 28). At 0.30 no
+// answerable question loses all of its evidence, ~98.5% of evidence chunks
+// are kept and ~24% of the others are dropped. The weakest question's best
+// evidence chunk scored 0.374, so from 0.40 up questions start losing all
+// their evidence. The margin below that is deliberate: the sweep covered
+// only two documents.
+export const DEFAULT_RERANK_THRESHOLD = 0.3;
+
+// The no-LLM relevance filter: keeps chunks whose Cohere rerank score
+// (0-1) is at least the threshold. A chunk without a score (reranking off,
+// or the reranker failed and fell back to fusion order) is kept: there is
+// no evidence against it, just as a failed LLM grade keeps the chunk.
+export function filterByRerankScore(
+  docs: Document[],
+  threshold: number = DEFAULT_RERANK_THRESHOLD
+): Document[] {
+  return docs.filter((doc) => {
+    const score = doc.metadata.rerankScore;
+    return typeof score !== "number" || score >= threshold;
+  });
+}
 
 export type ChunkGrade = { index: number; relevant: boolean; confidence: number };
 

@@ -1,6 +1,6 @@
 // Retrieval: query rewriting and decomposition, hybrid search with RRF
 // fusion, merging per-sub-question rankings, and retrieveChunks(), which runs
-// search -> rerank -> grading -> compression.
+// search -> rerank -> relevance filter -> compression.
 
 import { Document } from "@langchain/core/documents";
 import { ChatGroq } from "@langchain/groq";
@@ -15,7 +15,7 @@ import {
   getCollectionEmbedding,
   getQdrantClient,
 } from "./store";
-import { compressContext, gradeChunks } from "./postprocess";
+import { compressContext, filterByRerankScore, gradeChunks, resolveGradeMode } from "./postprocess";
 import type { PipelineOptions, PipelineStage, StageListener } from "./types";
 
 // Retrieval config
@@ -247,10 +247,15 @@ export async function retrieveChunks(
   const candidates = interleaveRankings(rankedLists, options.topK);
   const queries = queryLists.flat();
 
-  // Step 4: Relevance grading (CRAG). Empty result means "not in the document".
-  const relevant = options.grade
-    ? await time("gradeChunks", () => gradeChunks(question, candidates, llm))
-    : candidates;
+  // Step 4: Relevance filter. Empty result means "not in the document".
+  // The LLM grader (CRAG) costs a call; the rerank-score cut-off is free.
+  const gradeMode = resolveGradeMode(options.grade);
+  const relevant =
+    gradeMode === "llm"
+      ? await time("gradeChunks", () => gradeChunks(question, candidates, llm))
+      : gradeMode === "rerank-threshold"
+        ? filterByRerankScore(candidates, options.rerankThreshold)
+        : candidates;
   if (relevant.length === 0) return { chunks: [], candidates, queries };
 
   // Step 5: Context compression
