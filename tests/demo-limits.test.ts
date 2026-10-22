@@ -88,7 +88,7 @@ describe("readDemoConfig", () => {
       enabled: true,
       maxUploadsPerDay: 3,
       maxQuestionsPerDay: 20,
-      maxQuestionsTotalPerDay: 300,
+      maxQuestionsTotalPerDay: 25,
       notebookTtlHours: 24,
     });
   });
