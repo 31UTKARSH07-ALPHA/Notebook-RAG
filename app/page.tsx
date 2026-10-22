@@ -1,7 +1,26 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import { BookOpen, FilePlus2, FileText, Loader2, Send, UploadCloud } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { BookOpen, FilePlus2, FileText, Info, Loader2, Send, UploadCloud } from "lucide-react";
+import { MAX_UPLOAD_LABEL, isUploadTooLarge, uploadTooLargeMessage } from "@/lib/upload-limits";
+
+// Sent by /api/demo when the server runs with DEMO_MODE=true
+type DemoInfo = {
+  demoMode: boolean;
+  maxUploadsPerDay?: number;
+  maxQuestionsPerDay?: number;
+  notebookTtlHours?: number;
+};
+
+// Turns a failed response into a readable message; the body may not be JSON
+// (e.g. the hosting platform's own 413 page for an oversized upload)
+async function errorMessage(response: Response, fallback: string): Promise<string> {
+  const data = await response.json().catch(() => ({}));
+  if (data?.error) return data.error;
+  if (response.status === 413) return uploadTooLargeMessage();
+  if (response.status === 429) return "The demo's usage limit was reached. Please try again later.";
+  return fallback;
+}
 
 type Source = {
   fileName?: string;
@@ -101,9 +120,35 @@ export default function Home() {
   const [question, setQuestion] = useState("");
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [limitReached, setLimitReached] = useState(false);
+  const [demo, setDemo] = useState<DemoInfo | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isAsking, setIsAsking] = useState(false);
   const [stage, setStage] = useState("");
+
+  useEffect(() => {
+    fetch("/api/demo")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((info: DemoInfo | null) => setDemo(info))
+      .catch(() => undefined);
+  }, []);
+
+  // Usage-limit messages are shown as a calm notice rather than a red error
+  function showError(message: string, isLimit = false) {
+    setError(message);
+    setLimitReached(isLimit);
+  }
+
+  function chooseFile(next: File | null) {
+    showError("");
+    // Checked here so a too-large file is never sent (the server checks again)
+    if (next && isUploadTooLarge(next.size)) {
+      showError(uploadTooLargeMessage(next.size));
+      setFile(null);
+      return;
+    }
+    setFile(next);
+  }
 
   const canAsk = useMemo(
     () => Boolean(notebook && question.trim() && !isAsking),
@@ -114,8 +159,13 @@ export default function Home() {
     event.preventDefault();
     if (!file) return;
 
+    if (isUploadTooLarge(file.size)) {
+      showError(uploadTooLargeMessage(file.size));
+      return;
+    }
+
     setIsUploading(true);
-    setError("");
+    showError("");
     setStatus("Reading, chunking, embedding, and indexing your document...");
 
     const body = new FormData();
@@ -127,11 +177,16 @@ export default function Home() {
         method: "POST",
         body
       });
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || "Upload failed");
+        const message = await errorMessage(response, "Upload failed");
+        if (response.status === 429) {
+          showError(message, true);
+          setStatus("");
+          return;
+        }
+        throw new Error(message);
       }
+      const data = await response.json();
 
       setNotebook((current) => ({
         collectionName: data.collectionName,
@@ -140,7 +195,7 @@ export default function Home() {
       setFile(null);
       setStatus(`Indexed ${data.chunks} chunks from ${data.fileName}.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      showError(err instanceof Error ? err.message : "Upload failed");
       setStatus("");
     } finally {
       setIsUploading(false);
@@ -153,7 +208,7 @@ export default function Home() {
     setNotebook(null);
     setMessages([]);
     setStatus("");
-    setError("");
+    showError("");
     // Best effort: the old notebook's vectors are no longer needed
     fetch("/api/notebook", {
       method: "DELETE",
@@ -172,7 +227,7 @@ export default function Home() {
       .slice(-HISTORY_MESSAGES)
       .map(({ role, content }) => ({ role, content: content.slice(0, HISTORY_MESSAGE_CHARS) }));
     setQuestion("");
-    setError("");
+    showError("");
     setStage("");
     setIsAsking(true);
     setMessages((current) => [...current, { role: "user", content: nextQuestion }]);
@@ -192,8 +247,15 @@ export default function Home() {
 
       // Bad requests are rejected before streaming starts, as plain JSON
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Could not answer that question");
+        const message = await errorMessage(response, "Could not answer that question");
+        if (response.status === 429) {
+          // Not sent: take the question back out of the chat and restore it to the input
+          setMessages((current) => current.slice(0, -1));
+          setQuestion(nextQuestion);
+          showError(message, true);
+          return;
+        }
+        throw new Error(message);
       }
 
       let answered = false;
@@ -220,7 +282,7 @@ export default function Home() {
       });
       if (!answered) throw new Error("The answer was cut off. Please try again.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not answer that question");
+      showError(err instanceof Error ? err.message : "Could not answer that question");
     } finally {
       setIsAsking(false);
       setStage("");
@@ -248,7 +310,7 @@ export default function Home() {
               accept=".pdf,.txt,text/plain,application/pdf"
               disabled={isUploading}
               type="file"
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+              onChange={(event) => chooseFile(event.target.files?.[0] ?? null)}
             />
           </label>
           <button className="primary" disabled={!file || isUploading} type="submit">
@@ -256,8 +318,24 @@ export default function Home() {
             {isUploading ? "Indexing" : notebook ? "Add to notebook" : "Upload and index"}
           </button>
           {status ? <p className="status">{status}</p> : null}
-          {error ? <p className="error">{error}</p> : null}
+          {error ? (
+            <p className={limitReached ? "limit-notice" : "error"} role="alert">
+              {error}
+            </p>
+          ) : null}
         </form>
+
+        {demo?.demoMode ? (
+          <div className="demo-note">
+            <Info size={15} aria-hidden="true" />
+            <p>
+              Public demo on free API tiers: up to {demo.maxUploadsPerDay} uploads and{" "}
+              {demo.maxQuestionsPerDay} questions per day, files up to {MAX_UPLOAD_LABEL}. Notebooks
+              are deleted after {demo.notebookTtlHours} hours. Please don&apos;t upload private
+              documents.
+            </p>
+          </div>
+        ) : null}
 
         {notebook ? (
           <div className="notebook-docs" aria-label="Documents in this notebook">

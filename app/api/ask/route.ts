@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { answerQuestion, isNotebookCollection } from "@/lib/rag";
+import { checkQuestionLimit } from "@/lib/demo-limits";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -27,6 +28,13 @@ export async function POST(request: Request) {
       { error: "Upload a document before asking a question." },
       { status: 400 },
     );
+  }
+
+  // Demo mode only: per-visitor and global daily caps, checked before any
+  // other work so a rejected request costs no API calls (lib/demo-limits.ts)
+  const limit = checkQuestionLimit(request);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   if (!isNotebookCollection(collectionName)) {
