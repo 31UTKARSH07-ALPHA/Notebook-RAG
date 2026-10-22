@@ -108,6 +108,21 @@ export function parseSubQuestions(text: string, question: string): string[] {
 // and Qdrant merges all those ranked lists with Reciprocal Rank Fusion in a
 // single request.
 
+// RRF often gives several chunks exactly the same score, and Qdrant returns
+// tied points in no fixed order. That made results (and the reranker's
+// cache keys) differ run to run. A few extra candidates are fetched so ties at
+// the cut-off are included, then ties are broken by point id.
+const TIE_MARGIN = 10;
+
+export function orderFusedPoints<T extends { id: string | number; score: number }>(
+  points: T[],
+  limit: number
+): T[] {
+  return [...points]
+    .sort((a, b) => b.score - a.score || String(a.id).localeCompare(String(b.id)))
+    .slice(0, limit);
+}
+
 export async function hybridSearch(
   collectionName: string,
   queries: string[],
@@ -137,11 +152,11 @@ export async function hybridSearch(
   const { points } = await getQdrantClient().query(collectionName, {
     prefetch,
     query: { fusion: "rrf" },
-    limit,
+    limit: limit + TIE_MARGIN,
     with_payload: true,
   });
 
-  return points.map((point) => {
+  return orderFusedPoints(points, limit).map((point) => {
     const payload = point.payload as { pageContent: string; metadata: any };
     const meta = payload.metadata || {};
     return new Document({

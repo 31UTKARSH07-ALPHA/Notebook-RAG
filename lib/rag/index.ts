@@ -58,6 +58,7 @@ export {
   generateQueryVariants,
   hybridSearch,
   interleaveRankings,
+  orderFusedPoints,
   parseSubQuestions,
   retrieveChunks,
 } from "./retrieval";
