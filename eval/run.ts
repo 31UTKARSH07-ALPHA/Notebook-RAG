@@ -281,6 +281,7 @@ async function runGeneration(args: Args) {
   const questions = selectQuestions(args);
   const { collections } = await prepareCollections(questions, args);
   const configs: Record<string, unknown> = {};
+  let dailyLimitHit = false;
 
   for (const [name, options] of selectConfigs(GENERATION_CONFIGS, args)) {
     const rows = [];
@@ -325,6 +326,13 @@ async function runGeneration(args: Args) {
             ` faithfulness=${judgement.faithfulness?.toFixed(2) ?? "-"}${abstained ? " (abstained)" : ""}`
         );
       } catch (error) {
+        // Out of daily tokens: every remaining question would fail too. Stop,
+        // keep what's done; a re-run replays it from cache and carries on.
+        if (isDailyLimit(error)) {
+          dailyLimitHit = true;
+          console.error(`[${name}] daily token limit reached after ${rows.length} questions; stopping.`);
+          break;
+        }
         errors.push({ id: q.id, error: String(error) });
         console.error(`[${name}] ${q.id} FAILED:`, error);
       }
@@ -347,21 +355,32 @@ async function runGeneration(args: Args) {
         contextRecall: mean(answerable.map((r) => r.contextRecall ?? 0)),
         retries: rows.filter((r) => r.retried).length,
         errors: errors.length,
+        answered: rows.length,
       },
       questions: rows,
       errors,
     };
-  }
 
+    // Saved after every config so a stopped run keeps the finished ones
+    saveGeneration(args, questions.length, configs);
+    if (dailyLimitHit) break;
+  }
+}
+
+function saveGeneration(args: Args, questionCount: number, configs: Record<string, unknown>) {
   save(`generation-${indexVariant(args.chunking, args.contextHeaders, args.embedding)}`, {
     suite: "generation",
     chunking: indexVariant(args.chunking, args.contextHeaders, args.embedding),
     embedding: formatEmbedding(args.embedding),
     judgeModel: JUDGE_MODEL,
-    questionCount: questions.length,
+    questionCount,
     generatedAt: new Date().toISOString(),
     configs,
   });
+}
+
+function isDailyLimit(error: unknown): boolean {
+  return /tokens per day|\(TPD\)/i.test(String(error));
 }
 
 async function runLatency(args: Args) {
@@ -464,7 +483,9 @@ function buildReport() {
       table(
         ["Config", "Correctness (all)", "Answerable", "Multi-hop", "Correct abstention", "False refusal", "Faithfulness", "Fully faithful", "Context recall", "Errors"],
         Object.entries<any>(data.configs).map(([name, c]) => [
-          name,
+          c.summary.answered !== undefined && c.summary.answered < data.questionCount
+            ? `${name} (partial: ${c.summary.answered}/${data.questionCount})`
+            : name,
           pct(c.summary.correctness),
           pct(c.summary.correctnessAnswerable),
           pct(c.summary.correctnessByType.multi_hop),
