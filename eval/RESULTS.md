@@ -90,6 +90,12 @@ Searched-unit columns score the chunk that was searched; LLM-context columns sco
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | naive | 90.2% | 88.5% | 75.0% | 100.0% | 8.3% | 98.5% | 95.5% | 75.0% | 0 |
 
+## Generation: fixed chunking (56 questions, judge: openai/gpt-oss-20b)
+
+| Config | Correctness (all) | Answerable | Multi-hop | Correct abstention | False refusal | Faithfulness | Fully faithful | Context recall | Errors |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| naive (partial: 49/56) | 86.7% | 85.6% | 78.6% | 100.0% | 8.9% | 97.6% | 95.1% | 83.0% | 0 |
+
 ## Latency (6 questions, uncached)
 
 | Config | p50 | p90 | search (mean) | generate (mean) | decompose (mean) | rerank (mean) | gradeChunks (mean) | compress (mean) | groundingCheck (mean) |
