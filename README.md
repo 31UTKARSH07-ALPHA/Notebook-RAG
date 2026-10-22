@@ -1,31 +1,47 @@
 # SourceSage
 
-Ask questions about a PDF or text file and get answers that come only from that document, with the source passages shown next to every answer.
+Upload PDFs or text files into a notebook and ask questions across them. Every answer comes only from your documents and shows the passages it used.
 
-SourceSage is a NotebookLM-style retrieval-augmented generation (RAG) app. Instead of plain top-k vector search, it uses a multi-stage pipeline: question rewriting, hybrid dense + BM25 search, cross-encoder reranking, relevance filtering, and a grounding check on the final answer.
+SourceSage is a NotebookLM-style retrieval-augmented generation (RAG) app. Every stage of its pipeline was chosen by **measuring it**: a labeled evaluation set of 56 questions over two real documents scores each retrieval and answering configuration. See [eval/RESULTS.md](eval/RESULTS.md) for the numbers and [DECISIONS.md](DECISIONS.md) for the reasoning.
+
+## Results at a glance
+
+On 48 answerable questions over two public PDFs (a NIST policy framework and a research paper), scored on the 5 chunks the answer generator receives:
+
+| Retrieval setup | Evidence found (Recall@5) | Multi-part questions | First relevant chunk rank (MRR) |
+|---|---:|---:|---:|
+| Plain vector search, sentence-window chunks (the earlier design) | 79.2% | 60.0% | 0.650 |
+| Hybrid search + reranking, fixed-size chunks | 93.1% | 76.7% | 0.864 |
+| **+ query decomposition (current default)** | **96.2%** | **91.7%** | 0.829 |
+
+Main findings:
+- **Hybrid search** (embeddings + BM25 keywords) lifts recall from 81.9% to 93.1% over embeddings alone. With small chunks, embeddings found only 80% of the evidence for exact-term questions (codes, numbers), while BM25 found 100%.
+- **Plain ~1000-character chunks** beat both sentence-window and semantic chunking.
+- **Splitting multi-part questions** into separate searches fixed the weakest category. Multi-query rewriting added nothing.
 
 ## How it works
 
 ```mermaid
 flowchart TD
-    subgraph Ingestion["Upload"]
-        A[PDF / TXT] --> B[Parse pages with unpdf]
-        B --> C[Sentence-window chunking]
-        C --> D[Cohere embeddings<br/>dense, 1024-d]
+    subgraph Ingestion["Upload (each file is added to the notebook)"]
+        A[PDF / TXT] --> B[Parse pages with unpdf<br/>rejoin line-break hyphens]
+        B --> C[Fixed-size chunks<br/>~1000 chars, 200 overlap]
+        C --> D[Cohere embeddings<br/>dense]
         C --> E[BM25 term weights<br/>sparse]
-        D --> F[(Qdrant collection)]
+        D --> F[(Qdrant collection<br/>one per notebook)]
         E --> F
     end
 
     subgraph Query["Ask"]
-        Q[Question] --> R[LLM rewrites question 3 ways]
-        R --> S[Dense + BM25 search for every query<br/>fused with RRF inside Qdrant]
+        H[Follow-up + chat history] -->|condense| Q[Standalone question]
+        Q --> R[Split multi-part questions<br/>into sub-questions]
+        R --> S[Dense + BM25 search per sub-question<br/>fused with RRF inside Qdrant]
         F -.-> S
-        S --> T[Cohere Rerank 3.5<br/>top 20 → top 5]
-        T --> U[LLM relevance grader<br/>drops off-topic chunks]
-        U -->|nothing relevant| NF[“Not found in document”]
+        S --> T[Cohere Rerank 3.5 per sub-question<br/>top 20 → interleaved top 5]
+        T --> U[LLM relevance grader]
+        U -->|nothing relevant| NF[“Not found”]
         U --> V[Context compression]
-        V --> W[Grounded answer generation]
+        V --> W[Grounded answer with citations]
         W --> X{Hallucination grader}
         X -->|grounded| Y[Answer + sources]
         X -->|not grounded| W2[Regenerate once with feedback] --> Y
@@ -36,43 +52,81 @@ flowchart TD
 
 | Step | What it does | Why |
 |---|---|---|
-| Parsing | `unpdf` extracts text page by page; `.txt` is read directly. | Keeps page numbers for citations. |
-| Chunking | **Sentence window.** Each chunk is 2 sentences. It's stored with a wider "parent" window (2 extra sentences on each side). Text with no punctuation (tables, lists) is split on words at 500 characters. | Small chunks give precise matches; the parent window gives the LLM enough context to answer. |
-| Dense vectors | Cohere `embed-english-v3.0` with `input_type: search_document` (queries use `search_query`). Sent in batches of 96, Cohere's request limit. | Cohere v3 is trained asymmetrically, so documents and queries need different input types. |
-| Sparse vectors | **BM25.** The term-frequency part (k1 = 1.2, b = 0.75, normalized by chunk length) is computed at upload. The collection uses Qdrant's `modifier: "idf"`, so Qdrant applies the inverse-document-frequency part at query time. | Embeddings miss exact terms like names, codes and numbers ("extension 4410"); BM25 catches them. |
-| Storage | One Qdrant collection per document, holding both vectors. The previous document's collection is deleted when a new one is uploaded. | No cross-document leakage and no orphaned collections. |
+| Parsing | `unpdf` extracts text page by page. Words split across lines ("abil- ity") are rejoined, but real hyphens like "best- and worst-case" are kept. `.txt` files are read directly. | Keeps page numbers for citations. Split words would match nothing in either keyword or vector search. |
+| Chunking | **Fixed-size:** about 1000 characters with 200 characters of overlap, cut on word boundaries. Sentence-window and semantic chunking are also implemented, for comparison. | The best of the three strategies measured (93.1% evidence recall vs 86.1% and 88.9%), with less context than sentence-window and no extra upload cost. |
+| Dense vectors | Cohere `embed-english-v3.0` by default. `EMBEDDING_MODEL` and `EMBEDDING_DIM` can select `embed-v4.0` at 256–1536 dimensions. Documents use `input_type: search_document` and queries `search_query`, in batches of 96. | Cohere models embed documents and queries asymmetrically, so they need different input types. |
+| Sparse vectors | **BM25.** The term-frequency part (k1 = 1.2, b = 0.75) is computed at upload, and Qdrant applies IDF at query time (`modifier: "idf"`). | Embeddings miss exact identifiers ("GOVERN 1.7", "45.6%"); BM25 doesn't. |
+| Notebooks | One Qdrant collection per notebook. Each upload is added to it and tagged with a document id, so a failed upload can be removed cleanly. "New notebook" deletes the collection. | Questions search across every document in the notebook, like NotebookLM. |
 
 ### Query pipeline
 
-1. **Query translation.** The LLM writes 3 rephrasings of the question. The original question is always searched as well, so a bad rewrite can only add candidates.
-2. **Hybrid search + RRF.** Every query is searched against both the dense and the BM25 vectors (up to 8 ranked lists). Qdrant's Query API merges them with Reciprocal Rank Fusion in **one request**.
-3. **Reranking.** The top 20 fused candidates are scored by Cohere `rerank-v3.5`, a cross-encoder that reads the question and the chunk together, and the top 5 are kept. If the rerank API fails, the fusion order is used.
-4. **Relevance grading (corrective RAG).** One LLM call labels each chunk relevant or not. If nothing is relevant, the app answers "not found" without calling the generator, which prevents made-up answers.
-5. **Context compression.** Chunks are compressed in parallel, keeping only the sentences relevant to the question.
-6. **Generation.** Groq `openai/gpt-oss-120b` (configurable with `GROQ_MODEL`) answers using only the numbered sources.
-7. **Grounding check.** A grader LLM checks whether every claim is supported by the sources. If not, the answer is regenerated once with the grader's feedback. The result (grounded / may contain unsupported claims / not found) is shown in the UI.
+1. **Condense follow-ups.** With chat history, a small model rewrites "what about sales staff?" into a standalone question. History is only used to resolve references and never reaches the answer generator.
+2. **Decompose.** One LLM call splits a multi-part question into 2–3 standalone sub-questions; single-part questions pass through unchanged. This raised recall on multi-part questions from 76.7% to 91.7%.
+3. **Hybrid search + RRF.** Each (sub-)question is searched with both dense and BM25 vectors, and Qdrant's Query API fuses the lists with Reciprocal Rank Fusion in one request per sub-question.
+4. **Rerank.** Cohere `rerank-v3.5` scores the top 20 for each sub-question. The final top 5 takes turns between sub-questions, so every part of the question is represented.
+5. **Relevance grading.** One LLM call drops off-topic chunks. If nothing is left, the app answers "not found" without generating.
+6. **Compression.** Only the relevant sentences of each chunk are kept, with all chunks processed in parallel.
+7. **Generation.** Groq `openai/gpt-oss-120b` (configurable with `GROQ_MODEL`) answers only from numbered sources, with `[n]` citations.
+8. **Grounding check.** A grader checks every claim against the sources. An ungrounded answer is regenerated once with the grader's feedback, and the verdict is shown in the UI.
 
-Each response also returns the queries used and a per-stage latency breakdown (`timingsMs`).
+Every stage can be switched on or off with `PipelineOptions` (`lib/rag.ts`). That's how the evaluation measures each stage using the app's own code.
 
-For the reasoning behind each design choice, including what was broken in earlier versions and how it was fixed, see [DECISIONS.md](DECISIONS.md).
+**Live progress.** `/api/ask` streams newline-delimited JSON: a `{"type":"stage"}` event as each stage starts, then a `{"type":"result"}` (or `{"type":"error"}`) event. Answers aren't streamed token by token, because a draft that fails the grounding check is replaced.
+
+## Evaluation
+
+```bash
+npm run eval -- retrieval        # ranking quality of each pipeline config
+npm run eval -- generation       # answer correctness + faithfulness, graded by a second LLM
+npm run eval -- latency          # uncached end-to-end timings
+npm run eval -- report           # rebuild eval/RESULTS.md
+```
+
+- **Dataset:** 56 questions (factual, exact-keyword, multi-part, unanswerable), each labeled with exact evidence quotes.
+- **Scoring:** retrieval is scored on Recall@5 and MRR. Answers are scored for correctness and faithfulness by a different model from the generator, and plain refusals are scored in code.
+- **How it runs:** every API response is cached, so re-runs are free and reproducible.
+
+The full method and its limitations are in [eval/README.md](eval/README.md).
+
+## Tests
+
+```bash
+npm test
+```
+
+55 offline unit tests (vitest; no API keys or network) cover the deterministic parts:
+- PDF text cleanup and sentence splitting
+- all three chunking strategies
+- BM25 vectors, including hash collisions
+- query decomposition parsing and merging by turns
+- citation cleanup
+- the evaluation's own metrics
 
 ## Tech stack
 
 - **App:** Next.js 14 (App Router), React, TypeScript
-- **Vector DB:** Qdrant (named dense + sparse vectors, Query API fusion)
-- **Embeddings and reranking:** Cohere `embed-english-v3.0`, `rerank-v3.5`
-- **LLM:** Groq `openai/gpt-oss-120b` via LangChain
+- **Vector DB:** Qdrant (named dense + sparse vectors, Query API fusion, collection metadata)
+- **Embeddings and reranking:** Cohere `embed-english-v3.0` (or `embed-v4.0`), `rerank-v3.5`
+- **LLMs:** Groq `openai/gpt-oss-120b` (pipeline) and `openai/gpt-oss-20b` (follow-up condensing, context headers, evaluation judge)
 - **PDF parsing:** unpdf
+- **Tests:** vitest
 
 ## Project structure
 
 ```
 app/
-  page.tsx              chat UI: upload, ask, sources, grounding badge
-  api/upload/route.ts   parse → chunk → embed → index
-  api/ask/route.ts      runs answerQuestion()
+  page.tsx                 notebook UI: sources list, chat, live stage, grounding badge, citations
+  api/upload/route.ts      parse → chunk → embed → index (new notebook or add to one)
+  api/ask/route.ts         streams stage events + result as NDJSON
+  api/notebook/route.ts    deletes a notebook
 lib/
-  rag.ts                the whole RAG pipeline
+  rag.ts                   the whole RAG pipeline
+eval/
+  questions.json           56 labeled questions
+  documents.json           evaluation PDFs (downloaded and hash-checked at run time)
+  run.ts, lib.ts           harness: suites, metrics, judge, caches
+  RESULTS.md               generated results tables
+tests/                     offline unit tests
 ```
 
 ## Running locally
@@ -86,9 +140,13 @@ lib/
    QDRANT_URL=http://localhost:6333
    QDRANT_API_KEY=                      # only needed for Qdrant Cloud
    QDRANT_COLLECTION_PREFIX=sourcesage
+   EMBEDDING_MODEL=embed-english-v3.0   # optional; or embed-v4.0
+   EMBEDDING_DIM=1024                   # optional; embed-v4.0 takes 1536, 1024, 512 or 256
    ```
 
-2. Start Qdrant (version 1.10 or later is required for the IDF modifier and Query API):
+   The embedding settings apply to new notebooks only. Each collection records the model and size it was built with in its Qdrant metadata, and queries and later uploads use that, so two vector spaces never mix. Smaller vectors take less space (4 bytes per dimension: 6 KB per chunk at 1536, 1 KB at 256).
+
+2. Start Qdrant (1.10 or later, for the IDF modifier and Query API):
 
    ```bash
    docker run -p 6333:6333 -v "$(pwd)/qdrant_storage:/qdrant/storage" qdrant/qdrant
@@ -107,9 +165,9 @@ lib/
 
 Deploy to Vercel with the same environment variables, using Qdrant Cloud for `QDRANT_URL`.
 
-## Limitations and roadmap
+## Limitations
 
-- **Evaluation:** a retrieval benchmark (Recall@k, MRR) and LLM-judge metrics (faithfulness, answer relevancy) over a hand-labeled question set, plus an ablation of each pipeline stage. Not built yet.
-- **Latency:** a question currently makes about 5 LLM calls in sequence. Stage timings are recorded so this can be measured and tuned.
-- One document per notebook; no conversation memory between questions.
-- Scanned (image-only) PDFs aren't supported (no OCR).
+- **Free-tier limits.** Groq's free tier allows 200K tokens per model per day, and Cohere's trial key 1,000 calls per month. Bulk work like the full answer-quality evaluation needs a paid tier or several days.
+- **Latency.** The default pipeline takes 6.5 s at p50 (naive retrieval: 2.7 s), so the UI streams stage progress. About half of that is the three post-retrieval checks (grading, compression, grounding check). The pending answer-quality comparison will show whether they earn it.
+- **Conversation memory** covers the last 3 exchanges and lives in the browser.
+- **No OCR.** Scanned (image-only) PDFs aren't supported.

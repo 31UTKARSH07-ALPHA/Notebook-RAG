@@ -9,3 +9,6 @@ qdrant_storage
 *.tsbuildinfo
 ARCHITECTURE.md
 AGENT_HANDOFF.md
+eval/.data
+eval/.cache
+.claude/
