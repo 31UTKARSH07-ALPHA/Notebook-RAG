@@ -415,7 +415,7 @@ All numbers below come from `eval/` (method in [eval/README.md](eval/README.md),
 **Before.** Anyone with the URL could upload and ask without limit. Every question costs ~5 Groq LLM calls and at least 2 Cohere calls (embed + rerank), against 200K Groq tokens per model per day and ~1,000 Cohere trial calls per month (entry 22), so a handful of curious visitors, or one script, could exhaust the quota for everyone. Notebooks were only deleted when the user pressed "New notebook"; closing the tab left the collection in the free Qdrant cluster forever.
 
 **Decision.** A `DEMO_MODE=true` switch, off by default so local development and the evaluation are unaffected:
-- **Per-visitor daily caps** keyed by client IP (first `x-forwarded-for` entry, set by Vercel): 3 uploads and 20 questions per UTC day by default, plus a global cap of 300 questions per day across all visitors. Over the limit the route returns HTTP 429 with a readable message, before any API call is made, and the UI shows it as a notice and puts the question back in the input box.
+- **Per-visitor daily caps** keyed by client IP (first `x-forwarded-for` entry, set by Vercel): 3 uploads and 20 questions per UTC day by default, plus a global cap of 25 questions per day across all visitors: one question uses ~7K Groq tokens and the free tier allows 200K per day, which the evaluation also draws on. Over the limit the route returns HTTP 429 with a readable message, before any API call is made, and the UI shows it as a notice and puts the question back in the input box.
 - **4 MB upload limit**, checked in the browser before sending and again on the server. Vercel rejects bodies above ~4.5 MB with a bare 413 before the app runs, so the app's own limit sits just below it and can explain itself.
 - **Notebooks expire after 24 h** (`NOTEBOOK_TTL_HOURS`). The upload route writes `createdAt` into the collection's Qdrant metadata (merged with the embedding config already there, entry 19). A cleanup runs in the background on upload, at most once an hour per instance. It only considers collections with the app prefix, explicitly skips `_eval_` collections, and stamps any notebook without `createdAt` with the time it first sees it, so it expires one TTL later. It never deletes one immediately.
 - **A note under the upload box** states the limits, the expiry, and asks visitors not to upload private documents.
@@ -426,3 +426,18 @@ All numbers below come from `eval/` (method in [eval/README.md](eval/README.md),
 - **The counters live in memory, so the limits are best-effort.** On Vercel each warm instance keeps its own counts, and they reset on a cold start or redeploy, so a visitor can get more than the cap. Strict limits would need a shared store (e.g. Upstash Redis's free tier with a per-day counter keyed the same way). For a portfolio demo, stopping casual overuse and runaway loops is enough.
 - **IP is a coarse identity.** Visitors behind one NAT share a cap, and anyone with many IPs gets many caps. The global question cap bounds the worst case.
 - **Cleanup only runs when someone uploads.** With no uploads, expired notebooks wait for the next one. It runs during the upload request (which takes seconds), not after the response, because serverless functions may be frozen once they respond.
+
+## 27. Split the pipeline into modules
+
+**Before.** All of the RAG code lived in one ~1,600-line `lib/rag.ts`: config, Cohere calls, PDF parsing, chunking, BM25, Qdrant storage, context headers, retrieval, grading and compression, generation, chat follow-ups and the pipeline itself. That came from the original single-file design, and it was kept through the fixes above so that each change stayed a small, reviewable diff.
+
+**Problems.**
+- **Hard to read.** Finding how one stage works meant scrolling past every other stage.
+- **Hard to test in isolation.** Every test imported the whole pipeline, including the Qdrant and Groq clients.
+- **Parallel work conflicted.** Changes to unrelated stages (say, chunking and generation) touched the same file and kept producing merge conflicts.
+
+**Decision.** `lib/rag/` with one module per concern: `types`, `config`, `llm`, `cohere`, `parsing`, `chunking`, `bm25`, `store`, `context-headers`, `chat`, `retrieval`, `postprocess`, `generation` and `pipeline` (see the README's project structure). `lib/rag/index.ts` re-exports exactly the old public API, so `@/lib/rag` and `../lib/rag` imports in the app, the eval harness and the tests didn't change. Imports only point "downwards" (`types` and `config` import nothing from the others), so there are no circular imports.
+
+**How it was verified.** The code was moved, not rewritten: only imports and `export` on helpers now shared between modules changed. All 55 unit tests, `tsc` and `next build` pass. The retrieval eval was re-run from the response cache: `hybrid+rerank+decompose` reproduces the saved numbers exactly, and `hybrid` and `hybrid+rerank` have identical hit and recall. The only difference is a small MRR shift on `hybrid`, which the unchanged pre-refactor code shows too between runs: Qdrant doesn't order tied RRF scores deterministically.
+
+**Trade-off.** Fifteen files instead of one, and a reader has to follow imports between them. The header comment on each module says what it owns, to keep that cheap.

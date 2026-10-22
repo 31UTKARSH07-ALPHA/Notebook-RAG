@@ -26,7 +26,9 @@ export type DemoConfig = {
 const DEFAULTS = {
   maxUploadsPerDay: 3,
   maxQuestionsPerDay: 20,
-  maxQuestionsTotalPerDay: 300,
+  // One question costs ~7K Groq tokens and the free tier allows 200K per day
+  // per model, so about 25 questions a day is the real ceiling for everyone.
+  maxQuestionsTotalPerDay: 25,
   notebookTtlHours: 24,
 };
 

@@ -103,7 +103,7 @@ describe("readDemoConfig", () => {
     });
     expect(config.maxUploadsPerDay).toBe(5);
     expect(config.maxQuestionsPerDay).toBe(20);
-    expect(config.maxQuestionsTotalPerDay).toBe(300);
+    expect(config.maxQuestionsTotalPerDay).toBe(25);
     expect(config.notebookTtlHours).toBe(6);
   });
 });

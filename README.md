@@ -71,7 +71,7 @@ flowchart TD
 7. **Generation.** Groq `openai/gpt-oss-120b` (configurable with `GROQ_MODEL`) answers only from numbered sources, with `[n]` citations.
 8. **Grounding check.** A grader checks every claim against the sources. An ungrounded answer is regenerated once with the grader's feedback, and the verdict is shown in the UI.
 
-Every stage can be switched on or off with `PipelineOptions` (`lib/rag.ts`). That's how the evaluation measures each stage using the app's own code.
+Every stage can be switched on or off with `PipelineOptions` (`lib/rag/types.ts`). That's how the evaluation measures each stage using the app's own code.
 
 **Live progress.** `/api/ask` streams newline-delimited JSON: a `{"type":"stage"}` event as each stage starts, then a `{"type":"result"}` (or `{"type":"error"}`) event. Answers aren't streamed token by token, because a draft that fails the grounding check is replaced.
 
@@ -123,7 +123,22 @@ app/
   api/notebook/route.ts    deletes a notebook
   api/demo/route.ts        tells the UI whether demo mode (and which limits) is on
 lib/
-  rag.ts                   the whole RAG pipeline
+  rag/                     the RAG pipeline, one module per concern
+    index.ts               public API: everything else imports from "@/lib/rag"
+    types.ts               shared types (PipelineOptions, AnswerResult, stages)
+    config.ts              default pipeline, runtime config (strict mode, caches), env helpers
+    llm.ts                 Groq chat models and reading their replies
+    cohere.ts              Cohere requests (retries, cache), embedding models, embed(), rerank()
+    parsing.ts             PDF/.txt → one Document per page, text cleanup
+    chunking.ts            fixed-size (default), sentence-window and semantic chunking
+    bm25.ts                tokenizing and BM25 sparse vectors
+    store.ts               Qdrant client, notebook collections, indexing
+    context-headers.ts     optional per-page context headers (eval experiment)
+    chat.ts                history capping and condensing follow-up questions
+    retrieval.ts           decomposition, query rewrites, hybrid search, retrieveChunks()
+    postprocess.ts         relevance grading and context compression
+    generation.ts          grounded prompt, answer, citations, hallucination grader
+    pipeline.ts            answerQuestion(): condense → retrieve → generate → check → retry
 eval/
   questions.json           56 labeled questions
   documents.json           evaluation PDFs (downloaded and hash-checked at run time)
@@ -150,7 +165,7 @@ tests/                     offline unit tests
    DEMO_MODE=true                       # turns on the limits below and the demo note in the UI
    DEMO_MAX_UPLOADS_PER_DAY=3           # per visitor (IP)
    DEMO_MAX_QUESTIONS_PER_DAY=20        # per visitor (IP)
-   DEMO_MAX_QUESTIONS_TOTAL_PER_DAY=300 # all visitors together
+   DEMO_MAX_QUESTIONS_TOTAL_PER_DAY=25  # all visitors together (~7K Groq tokens each; free tier = 200K/day)
    NOTEBOOK_TTL_HOURS=24                # notebooks older than this are deleted
    ```
 
@@ -181,7 +196,7 @@ Live demo: _coming soon_
 
 A public deployment spends the owner's free API quotas, so it runs with `DEMO_MODE=true`:
 
-- **Usage limits.** Each visitor (by IP) gets `DEMO_MAX_UPLOADS_PER_DAY` uploads (default 3) and `DEMO_MAX_QUESTIONS_PER_DAY` questions (default 20) per UTC day, and all visitors together share `DEMO_MAX_QUESTIONS_TOTAL_PER_DAY` questions (default 300). Over the limit, the API returns HTTP 429 with a message the UI shows. Code: `lib/demo-limits.ts`.
+- **Usage limits.** Each visitor (by IP) gets `DEMO_MAX_UPLOADS_PER_DAY` uploads (default 3) and `DEMO_MAX_QUESTIONS_PER_DAY` questions (default 20) per UTC day, and all visitors together share `DEMO_MAX_QUESTIONS_TOTAL_PER_DAY` questions (default 25, because one question uses ~7K of the Groq free tier's 200K daily tokens). Over the limit, the API returns HTTP 429 with a message the UI shows. Code: `lib/demo-limits.ts`.
 - **Upload size.** Files over 4 MB are rejected in the browser before uploading and again by the server (Vercel caps request bodies at ~4.5 MB). Code: `lib/upload-limits.ts`.
 - **Notebook expiry.** Each new notebook gets a `createdAt` in its Qdrant collection metadata. On upload, at most once an hour per server instance, a background cleanup deletes notebooks older than `NOTEBOOK_TTL_HOURS` (default 24). Evaluation collections (`*_eval_*`) are never touched. Code: `lib/notebook-cleanup.ts`, `lib/notebook-ttl.ts`.
 - **A note in the UI** states the limits, the expiry and asks visitors not to upload private documents.
