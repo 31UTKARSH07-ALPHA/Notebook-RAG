@@ -1,0 +1,2783 @@
+{
+  "suite": "filter",
+  "chunking": "fixed",
+  "source": "retrieval-fixed.json (generated 2026-10-21T23:01:26.352Z)",
+  "appThreshold": 0.3,
+  "generatedAt": "2026-10-22T18:50:39.348Z",
+  "configs": {
+    "hybrid+rerank": {
+      "options": {
+        "search": "hybrid",
+        "multiQuery": false,
+        "decompose": false,
+        "rerank": true,
+        "grade": false,
+        "compress": false,
+        "groundingCheck": false,
+        "topK": 5
+      },
+      "scored": {
+        "answerable": 48,
+        "unanswerable": 0,
+        "chunks": 240,
+        "relevantChunks": 62
+      },
+      "sweep": [
+        {
+          "threshold": 0,
+          "relevantKept": 1,
+          "irrelevantDropped": 0,
+          "meanChunksKept": 5,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.05,
+          "relevantKept": 1,
+          "irrelevantDropped": 0.02247191011235955,
+          "meanChunksKept": 4.916666666666667,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.1,
+          "relevantKept": 1,
+          "irrelevantDropped": 0.07303370786516854,
+          "meanChunksKept": 4.729166666666667,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.15,
+          "relevantKept": 1,
+          "irrelevantDropped": 0.10112359550561797,
+          "meanChunksKept": 4.625,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.2,
+          "relevantKept": 1,
+          "irrelevantDropped": 0.12921348314606743,
+          "meanChunksKept": 4.520833333333333,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.25,
+          "relevantKept": 1,
+          "irrelevantDropped": 0.17415730337078653,
+          "meanChunksKept": 4.354166666666667,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.3,
+          "relevantKept": 0.9838709677419355,
+          "irrelevantDropped": 0.23595505617977527,
+          "meanChunksKept": 4.104166666666667,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.35,
+          "relevantKept": 0.9838709677419355,
+          "irrelevantDropped": 0.2696629213483146,
+          "meanChunksKept": 3.9791666666666665,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.4,
+          "relevantKept": 0.967741935483871,
+          "irrelevantDropped": 0.34831460674157305,
+          "meanChunksKept": 3.6666666666666665,
+          "emptiedAnswerable": 1,
+          "evidenceLostAnswerable": 1,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.45,
+          "relevantKept": 0.9354838709677419,
+          "irrelevantDropped": 0.39325842696629215,
+          "meanChunksKept": 3.4583333333333335,
+          "emptiedAnswerable": 1,
+          "evidenceLostAnswerable": 2,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.5,
+          "relevantKept": 0.9032258064516129,
+          "irrelevantDropped": 0.47191011235955055,
+          "meanChunksKept": 3.125,
+          "emptiedAnswerable": 1,
+          "evidenceLostAnswerable": 2,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.55,
+          "relevantKept": 0.8709677419354839,
+          "irrelevantDropped": 0.550561797752809,
+          "meanChunksKept": 2.7916666666666665,
+          "emptiedAnswerable": 4,
+          "evidenceLostAnswerable": 4,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.6,
+          "relevantKept": 0.7903225806451613,
+          "irrelevantDropped": 0.6235955056179775,
+          "meanChunksKept": 2.4166666666666665,
+          "emptiedAnswerable": 6,
+          "evidenceLostAnswerable": 7,
+          "emptiedUnanswerable": 0
+        }
+      ],
+      "questions": [
+        {
+          "id": "nist-01",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.7371019,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.40098447,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.38984904,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.37079534,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.33141232,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-02",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.5489884,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.43842506,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.2258436,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.22237949,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.21221608,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-03",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.9053309,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.798643,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.70483154,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6964752,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.67885995,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-04",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.9242583,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.7001783,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6894943,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.67192334,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6557114,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-05",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.85567063,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6882385,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.67243975,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6664756,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.657297,
+              "relevant": true
+            }
+          ]
+        },
+        {
+          "id": "nist-06",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.6821721,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6155738,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5993685,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.35999444,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.34634283,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-07",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.5792344,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.444493,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.35166776,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.27970597,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.256681,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-08",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.9317675,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6133529,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5482629,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.54666615,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.49963441,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-09",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.55420566,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.09871195,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.09106655,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.0865164,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.051486712,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-10",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.8524574,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.5826579,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.55709904,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.54564947,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.53065056,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-11",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.6934942,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.4368388,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.042344477,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.03379624,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.031645752,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-12",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.91023487,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.8173562,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.7520312,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.735737,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.72348577,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-13",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.60245985,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.41463867,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.2741951,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.25959843,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.23882566,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-14",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.7409441,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.61112726,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.528607,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5081298,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5054935,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-15",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.70067,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.3901278,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.27715296,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.27146336,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.23941201,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-16",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.72019166,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.19456702,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.17562322,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.15300447,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.12458555,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-17",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.8576849,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.769098,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.769098,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.7060491,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6191726,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-18",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.9441409,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.5809471,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5792344,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5749443,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5637388,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-19",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.87166095,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.63452125,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.62934244,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.46949652,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.33456823,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-20",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.818055,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.79099923,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6737291,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.59880555,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.46060488,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-21",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.6937432,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6824261,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.5174983,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.48674685,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4808937,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-22",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.83710164,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.8018276,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.78572035,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.73642004,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.69622743,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-23",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.66464967,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6599319,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.63234437,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.62000114,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6002124,
+              "relevant": true
+            }
+          ]
+        },
+        {
+          "id": "nist-24",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.54477775,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.49436116,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4854295,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.48323447,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.39873472,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-01",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.926683,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.92176014,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6133529,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.27056077,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.26650923,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-02",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.7361925,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.14310412,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.068046756,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.06628469,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.054003943,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-03",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.735737,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.69399214,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.657561,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.65173227,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6501347,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-04",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.8775715,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.7574541,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6826801,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.31621137,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.31000513,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-05",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.8051581,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.76279575,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6922474,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.65252984,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.529191,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-06",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.8029425,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.8021998,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.74161834,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.7156829,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.69746524,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-07",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.82082915,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.8036831,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.66308063,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5758033,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.48264915,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-08",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.6578248,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.44420364,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.42491361,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.39943734,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.38936135,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-09",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.37387636,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.24369235,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.18330139,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.12820852,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.04979665,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-10",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.70483154,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.26428524,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.15683989,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.1476169,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.118640356,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-11",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.9446333,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6044228,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.46701634,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4423239,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.28868985,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-12",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.6882385,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6188962,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.568632,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.3515342,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.31403002,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-13",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.6420965,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6334335,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.62523276,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.61668247,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5849357,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-14",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.8652358,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.559411,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.54710174,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.51032627,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.37442517,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-15",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.7300017,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.7206637,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.55883324,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4651208,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.39445806,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-16",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.9356824,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.89545894,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.78214747,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6147415,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6058229,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-17",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.935964,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.72042775,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.55883324,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4866005,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.47957736,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-18",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.91137725,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.72559077,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4572585,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.07602966,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.068793684,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-19",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.8576849,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.78413767,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.533714,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.44594026,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.39803258,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-20",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.7272211,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.528899,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4921643,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.45333505,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.36283427,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-21",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.9094659,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.78532547,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.7382357,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.69573146,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6937432,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-22",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.6847074,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.5663309,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.5617203,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.43539792,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.22303882,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-23",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.53954184,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.36452922,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.2762771,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.2521036,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.24196865,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-24",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.9132521,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.8380581,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.7574541,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.7348247,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.7178241,
+              "relevant": false
+            }
+          ]
+        }
+      ]
+    },
+    "hybrid+rerank+decompose": {
+      "options": {
+        "search": "hybrid",
+        "multiQuery": false,
+        "decompose": true,
+        "rerank": true,
+        "grade": false,
+        "compress": false,
+        "groundingCheck": false,
+        "topK": 5
+      },
+      "scored": {
+        "answerable": 48,
+        "unanswerable": 0,
+        "chunks": 240,
+        "relevantChunks": 65
+      },
+      "sweep": [
+        {
+          "threshold": 0,
+          "relevantKept": 1,
+          "irrelevantDropped": 0,
+          "meanChunksKept": 5,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.05,
+          "relevantKept": 1,
+          "irrelevantDropped": 0.022857142857142857,
+          "meanChunksKept": 4.916666666666667,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.1,
+          "relevantKept": 1,
+          "irrelevantDropped": 0.09142857142857143,
+          "meanChunksKept": 4.666666666666667,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.15,
+          "relevantKept": 0.9846153846153847,
+          "irrelevantDropped": 0.10285714285714286,
+          "meanChunksKept": 4.604166666666667,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.2,
+          "relevantKept": 0.9846153846153847,
+          "irrelevantDropped": 0.12,
+          "meanChunksKept": 4.541666666666667,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.25,
+          "relevantKept": 0.9846153846153847,
+          "irrelevantDropped": 0.17714285714285713,
+          "meanChunksKept": 4.333333333333333,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.3,
+          "relevantKept": 0.9846153846153847,
+          "irrelevantDropped": 0.24571428571428572,
+          "meanChunksKept": 4.083333333333333,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.35,
+          "relevantKept": 0.9846153846153847,
+          "irrelevantDropped": 0.28,
+          "meanChunksKept": 3.9583333333333335,
+          "emptiedAnswerable": 0,
+          "evidenceLostAnswerable": 0,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.4,
+          "relevantKept": 0.9538461538461539,
+          "irrelevantDropped": 0.34285714285714286,
+          "meanChunksKept": 3.6875,
+          "emptiedAnswerable": 1,
+          "evidenceLostAnswerable": 1,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.45,
+          "relevantKept": 0.9384615384615385,
+          "irrelevantDropped": 0.41714285714285715,
+          "meanChunksKept": 3.3958333333333335,
+          "emptiedAnswerable": 1,
+          "evidenceLostAnswerable": 2,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.5,
+          "relevantKept": 0.9384615384615385,
+          "irrelevantDropped": 0.49142857142857144,
+          "meanChunksKept": 3.125,
+          "emptiedAnswerable": 1,
+          "evidenceLostAnswerable": 2,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.55,
+          "relevantKept": 0.8923076923076924,
+          "irrelevantDropped": 0.5542857142857143,
+          "meanChunksKept": 2.8333333333333335,
+          "emptiedAnswerable": 2,
+          "evidenceLostAnswerable": 2,
+          "emptiedUnanswerable": 0
+        },
+        {
+          "threshold": 0.6,
+          "relevantKept": 0.8307692307692308,
+          "irrelevantDropped": 0.6114285714285714,
+          "meanChunksKept": 2.5416666666666665,
+          "emptiedAnswerable": 4,
+          "evidenceLostAnswerable": 5,
+          "emptiedUnanswerable": 0
+        }
+      ],
+      "questions": [
+        {
+          "id": "nist-01",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.7371019,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.40098447,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.38984904,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.37079534,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.33141232,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-02",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.5489884,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.43842506,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.2258436,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.22237949,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.21221608,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-03",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.9053309,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.798643,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.70483154,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6964752,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.67885995,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-04",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.9242583,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.7001783,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6894943,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.67192334,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6557114,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-05",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.85567063,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6882385,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.67243975,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6664756,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.657297,
+              "relevant": true
+            }
+          ]
+        },
+        {
+          "id": "nist-06",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.7120925,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.69697046,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6216563,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.41122967,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.29244927,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-07",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.5792344,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.444493,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.35166776,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.27970597,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.256681,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-08",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.9317675,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6133529,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5482629,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.54666615,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.49963441,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-09",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.55420566,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.09871195,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.09106655,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.0865164,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.051486712,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-10",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.8184036,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.5172057,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.45900398,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.49260366,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4296453,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-11",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.6934942,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.4368388,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.042344477,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.03379624,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.031645752,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-12",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.91023487,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.8173562,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.7520312,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.735737,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.72348577,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-13",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.60245985,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.41463867,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.2741951,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.25959843,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.23882566,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-14",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.7409441,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.61112726,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.528607,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5081298,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5054935,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-15",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.7004242,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.3900581,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.27684492,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.27141628,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.23933198,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-16",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.7467494,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.67269784,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.22028412,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.588062,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.17146346,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-17",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.75421005,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.8690161,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.70847535,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.8351749,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6578248,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-18",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.9441409,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.5809471,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5792344,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5749443,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5637388,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-19",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.87166095,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.63452125,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.62934244,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.46949652,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.33456823,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-20",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.75659186,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.8810534,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.528461,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6353361,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.42119524,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-21",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.8473754,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.5402697,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.26422113,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4877716,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.24526165,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-22",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.6238588,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.7395922,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.3462102,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6932451,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.2694618,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-23",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.8201387,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6543875,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.73981786,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.58465123,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.7368747,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "nist-24",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.78650844,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.09431857,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.77589405,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.08633136,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6450534,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-01",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.926683,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.92176014,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6133529,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.27056077,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.26650923,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-02",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.7361925,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.14310412,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.068046756,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.06628469,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.054003943,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-03",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.735737,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.69399214,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.657561,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.65173227,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6501347,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-04",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.8775715,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.7574541,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6826801,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.31621137,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.31000513,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-05",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.8051581,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.76279575,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6922474,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.65252984,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.529191,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-06",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.8029425,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.8021998,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.74161834,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.7156829,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.69746524,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-07",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.82082915,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.8036831,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.66308063,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5758033,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.48264915,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-08",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.6578248,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.44420364,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.42491361,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.39943734,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.38936135,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-09",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.37387636,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.24369235,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.18330139,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.12820852,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.04979665,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-10",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.7187726,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.11870165,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.2023017,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.07092566,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.18374038,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-11",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.9446333,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6044228,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.46701634,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4423239,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.28868985,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-12",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.6882385,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6188962,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.568632,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.3515342,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.31403002,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-13",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.6420965,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.6334335,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.62523276,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.61668247,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.5849357,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-14",
+          "type": "factual",
+          "chunks": [
+            {
+              "rerankScore": 0.8652358,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.559411,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.54710174,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.51032627,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.37442517,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-15",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.7300017,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.7206637,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.55883324,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4651208,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.39445806,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-16",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.9358233,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.8851659,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.69573146,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.7190094,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.68420124,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-17",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.935964,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.72042775,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.55883324,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4866005,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.47957736,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-18",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.91137725,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.72559077,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4572585,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.07602966,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.068793684,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-19",
+          "type": "keyword",
+          "chunks": [
+            {
+              "rerankScore": 0.8576849,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.78413767,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.533714,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.44594026,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.39803258,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-20",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.8286204,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6139086,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6530611,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.388665,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.63804686,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-21",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.852752,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.7574541,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.79901963,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.7491794,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.77487355,
+              "relevant": true
+            }
+          ]
+        },
+        {
+          "id": "litm-22",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.6466616,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6445166,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.54666615,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6255073,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.20866264,
+              "relevant": false
+            }
+          ]
+        },
+        {
+          "id": "litm-23",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.49318945,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.73778254,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.4031679,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.4558047,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.38762134,
+              "relevant": true
+            }
+          ]
+        },
+        {
+          "id": "litm-24",
+          "type": "multi_hop",
+          "chunks": [
+            {
+              "rerankScore": 0.7644879,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.93295,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.6549173,
+              "relevant": true
+            },
+            {
+              "rerankScore": 0.83093774,
+              "relevant": false
+            },
+            {
+              "rerankScore": 0.42935818,
+              "relevant": false
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

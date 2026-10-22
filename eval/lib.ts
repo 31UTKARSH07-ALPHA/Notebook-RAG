@@ -230,6 +230,51 @@ export function retrievalMetrics(
   };
 }
 
+// Relevance-filter sweep. Each retrieved chunk is labeled relevant iff it
+// contains an evidence quote. For every threshold, chunks scoring below it
+// are dropped, and the counts show what a rerank-score cut-off would keep
+// and what it would lose.
+
+export type ScoredChunk = { rerankScore: number; relevant: boolean };
+export type FilterQuestion = { id: string; type: QuestionType; chunks: ScoredChunk[] };
+
+export type ThresholdRow = {
+  threshold: number;
+  relevantKept: number; // share of relevant chunks kept
+  irrelevantDropped: number; // share of irrelevant chunks dropped
+  meanChunksKept: number; // per question (out of topK)
+  emptiedAnswerable: number; // answerable questions left with no chunk -> "not found" without generating
+  evidenceLostAnswerable: number; // answerable questions whose every evidence chunk is dropped (includes emptied)
+  emptiedUnanswerable: number; // unanswerable questions left with no chunk -> correct "not found"
+};
+
+export function sweepThresholds(questions: FilterQuestion[], thresholds: number[]): ThresholdRow[] {
+  const chunks = questions.flatMap((q) => q.chunks);
+  const relevant = chunks.filter((c) => c.relevant);
+  const irrelevant = chunks.filter((c) => !c.relevant);
+  const answerable = questions.filter((q) => q.type !== "unanswerable");
+  const unanswerable = questions.filter((q) => q.type === "unanswerable");
+
+  return thresholds.map((threshold) => {
+    const kept = (c: ScoredChunk) => c.rerankScore >= threshold;
+    const emptied = (q: FilterQuestion) => !q.chunks.some(kept);
+    return {
+      threshold,
+      relevantKept: relevant.length ? relevant.filter(kept).length / relevant.length : NaN,
+      irrelevantDropped: irrelevant.length
+        ? irrelevant.filter((c) => !kept(c)).length / irrelevant.length
+        : NaN,
+      meanChunksKept: questions.length ? chunks.filter(kept).length / questions.length : NaN,
+      emptiedAnswerable: answerable.filter(emptied).length,
+      // Only a question that had evidence in the top-K can lose it
+      evidenceLostAnswerable: answerable.filter(
+        (q) => q.chunks.some((c) => c.relevant) && !q.chunks.some((c) => c.relevant && kept(c))
+      ).length,
+      emptiedUnanswerable: unanswerable.filter(emptied).length,
+    };
+  });
+}
+
 // LLM judge
 
 export type Judgement = {

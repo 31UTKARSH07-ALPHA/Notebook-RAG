@@ -102,3 +102,47 @@ Searched-unit columns score the chunk that was searched; LLM-context columns sco
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | naive | 2.7 s | 3.3 s | 1.6 s | 1.2 s | – | – | – | – | – |
 | full | 6.5 s | 14.3 s | 1.6 s | 0.7 s | 0.8 s | 1.4 s | 1.3 s | 1.0 s | 0.8 s |
+
+## Relevance filter: rerank-score threshold sweep (fixed chunking, hybrid+rerank)
+
+From the saved top-5 of 48 answerable questions: 240 chunks, 62 of them relevant (contain an evidence quote). The app's `DEFAULT_RERANK_THRESHOLD` is 0.3.
+
+"Emptied": every chunk is dropped, so the pipeline answers "not found" without generating. "Evidence lost": the question had evidence in the top 5 and every evidence chunk is dropped (emptied or not).
+
+| Threshold | Relevant kept | Irrelevant dropped | Chunks kept / question | Answerable emptied | Answerable evidence lost |
+|---|---:|---:|---:|---:|---:|
+| 0.00 | 100.0% | 0.0% | 5.00 | 0/48 | 0/48 |
+| 0.05 | 100.0% | 2.2% | 4.92 | 0/48 | 0/48 |
+| 0.10 | 100.0% | 7.3% | 4.73 | 0/48 | 0/48 |
+| 0.15 | 100.0% | 10.1% | 4.63 | 0/48 | 0/48 |
+| 0.20 | 100.0% | 12.9% | 4.52 | 0/48 | 0/48 |
+| 0.25 | 100.0% | 17.4% | 4.35 | 0/48 | 0/48 |
+| 0.30 | 98.4% | 23.6% | 4.10 | 0/48 | 0/48 |
+| 0.35 | 98.4% | 27.0% | 3.98 | 0/48 | 0/48 |
+| 0.40 | 96.8% | 34.8% | 3.67 | 1/48 | 1/48 |
+| 0.45 | 93.5% | 39.3% | 3.46 | 1/48 | 2/48 |
+| 0.50 | 90.3% | 47.2% | 3.13 | 1/48 | 2/48 |
+| 0.55 | 87.1% | 55.1% | 2.79 | 4/48 | 4/48 |
+| 0.60 | 79.0% | 62.4% | 2.42 | 6/48 | 7/48 |
+
+## Relevance filter: rerank-score threshold sweep (fixed chunking, hybrid+rerank+decompose)
+
+From the saved top-5 of 48 answerable questions: 240 chunks, 65 of them relevant (contain an evidence quote). The app's `DEFAULT_RERANK_THRESHOLD` is 0.3.
+
+"Emptied": every chunk is dropped, so the pipeline answers "not found" without generating. "Evidence lost": the question had evidence in the top 5 and every evidence chunk is dropped (emptied or not).
+
+| Threshold | Relevant kept | Irrelevant dropped | Chunks kept / question | Answerable emptied | Answerable evidence lost |
+|---|---:|---:|---:|---:|---:|
+| 0.00 | 100.0% | 0.0% | 5.00 | 0/48 | 0/48 |
+| 0.05 | 100.0% | 2.3% | 4.92 | 0/48 | 0/48 |
+| 0.10 | 100.0% | 9.1% | 4.67 | 0/48 | 0/48 |
+| 0.15 | 98.5% | 10.3% | 4.60 | 0/48 | 0/48 |
+| 0.20 | 98.5% | 12.0% | 4.54 | 0/48 | 0/48 |
+| 0.25 | 98.5% | 17.7% | 4.33 | 0/48 | 0/48 |
+| 0.30 | 98.5% | 24.6% | 4.08 | 0/48 | 0/48 |
+| 0.35 | 98.5% | 28.0% | 3.96 | 0/48 | 0/48 |
+| 0.40 | 95.4% | 34.3% | 3.69 | 1/48 | 1/48 |
+| 0.45 | 93.8% | 41.7% | 3.40 | 1/48 | 2/48 |
+| 0.50 | 93.8% | 49.1% | 3.13 | 1/48 | 2/48 |
+| 0.55 | 89.2% | 55.4% | 2.83 | 2/48 | 2/48 |
+| 0.60 | 83.1% | 61.1% | 2.54 | 4/48 | 5/48 |

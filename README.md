@@ -66,7 +66,7 @@ flowchart TD
 2. **Decompose.** One LLM call splits a multi-part question into 2–3 standalone sub-questions; single-part questions pass through unchanged. This raised recall on multi-part questions from 76.7% to 91.7%.
 3. **Hybrid search + RRF.** Each (sub-)question is searched with both dense and BM25 vectors, and Qdrant's Query API fuses the lists with Reciprocal Rank Fusion in one request per sub-question.
 4. **Rerank.** Cohere `rerank-v3.5` scores the top 20 for each sub-question. The final top 5 takes turns between sub-questions, so every part of the question is represented.
-5. **Relevance grading.** One LLM call drops off-topic chunks. If nothing is left, the app answers "not found" without generating.
+5. **Relevance grading.** One LLM call drops off-topic chunks. If nothing is left, the app answers "not found" without generating. A free alternative is available but not the default: `grade: "rerank-threshold"` drops chunks with a rerank score below 0.30 instead, with no LLM call. That threshold was picked from saved eval data ([DECISIONS.md](DECISIONS.md), entry 28).
 6. **Compression.** Only the relevant sentences of each chunk are kept, with all chunks processed in parallel.
 7. **Generation.** Groq `openai/gpt-oss-120b` (configurable with `GROQ_MODEL`) answers only from numbered sources, with `[n]` citations.
 8. **Grounding check.** A grader checks every claim against the sources. An ungrounded answer is regenerated once with the grader's feedback, and the verdict is shown in the UI.
@@ -81,6 +81,7 @@ Every stage can be switched on or off with `PipelineOptions` (`lib/rag/types.ts`
 npm run eval -- retrieval        # ranking quality of each pipeline config
 npm run eval -- generation       # answer correctness + faithfulness, graded by a second LLM
 npm run eval -- latency          # uncached end-to-end timings
+npm run eval -- filter           # rerank-score threshold sweep from saved results (no API calls)
 npm run eval -- report           # rebuild eval/RESULTS.md
 ```
 

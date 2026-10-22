@@ -35,12 +35,24 @@ export type AnswerResult = {
   retrieved: Document[]; // top-K after search and reranking, before grading
 };
 
+// The relevance filter between retrieval and generation (see postprocess.ts):
+//   "llm"              one LLM call grades every chunk (CRAG)
+//   "rerank-threshold" drops chunks whose Cohere rerank score is below
+//                      rerankThreshold; no LLM call
+//   "off"              keeps every retrieved chunk
+export type GradeMode = "llm" | "rerank-threshold" | "off";
+
 export type PipelineOptions = {
   search: "dense" | "sparse" | "hybrid";
   multiQuery: boolean; // add LLM rewrites of the question
   decompose: boolean; // split multi-part questions and retrieve for each part
   rerank: boolean;
-  grade: boolean; // LLM relevance filter (CRAG)
+  // Relevance filter. `true` is the LLM grader and `false` is "off", so
+  // options (and saved eval results) written before the modes existed keep
+  // their meaning.
+  grade: boolean | GradeMode;
+  // Cut-off for grade: "rerank-threshold"; DEFAULT_RERANK_THRESHOLD if omitted
+  rerankThreshold?: number;
   compress: boolean;
   groundingCheck: boolean; // hallucination grader + one retry
   topK: number;
