@@ -1,6 +1,6 @@
 # SourceSage
 
-[![CI](https://github.com/31UTKARSH07-ALPHA/Notebook-RAG/actions/workflows/ci.yml/badge.svg)](https://github.com/31UTKARSH07-ALPHA/Notebook-RAG/actions/workflows/ci.yml)
+[![CI](https://github.com/31UTKARSH07-ALPHA/SourceSage/actions/workflows/ci.yml/badge.svg)](https://github.com/31UTKARSH07-ALPHA/SourceSage/actions/workflows/ci.yml)
 
 Upload PDFs or text files into a notebook and ask questions across them. Every answer comes only from your documents and shows the passages it used.
 
