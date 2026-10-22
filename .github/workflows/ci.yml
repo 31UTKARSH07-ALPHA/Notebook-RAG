@@ -16,8 +16,8 @@ jobs:
           node-version: 22
           cache: npm
 
-      # --legacy-peer-deps: the LangChain packages have peer-version conflicts
-      - run: npm ci --legacy-peer-deps
+      # .npmrc sets legacy-peer-deps for the LangChain peer-version conflicts
+      - run: npm ci
 
       - name: Unit tests
         run: npm test
