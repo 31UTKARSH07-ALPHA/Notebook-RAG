@@ -170,7 +170,7 @@ A grader failure now returns `unverified` instead of a false "grounded".
 | Empty `QDRANT_API_KEY=` was still sent as a key (Qdrant warned about it) | Empty means no key |
 | Name: "Notebook RAG" / `notebooklm-rag-clone` | **SourceSage** |
 
-**Security note.** Real Google and Qdrant API keys were committed in the first commit of this repo. Deleting the file later doesn't remove them from git history, so those keys must be treated as leaked: the Qdrant key was rotated, and the Google key (no longer used by the app) should be revoked. Lesson: make `.env*` ignored from the very first commit, and treat any key that was ever committed as leaked.
+**Security note.** Real Google and Qdrant API keys were committed in the first commit of this repo. Deleting the file later doesn't remove them from git history, so those keys must be treated as leaked: the Qdrant key was rotated. Google's own leak scanner had already disabled the Google key (its API answered "Your API key was reported as leaked"), and it was then deleted in AI Studio. Lesson: make `.env*` ignored from the very first commit, and treat any key that was ever committed as leaked.
 
 ---
 
@@ -384,11 +384,13 @@ All numbers below come from `eval/` (method in [eval/README.md](eval/README.md),
 
 ## 25. What isn't measured yet
 
-- **End-to-end answer quality for every config.** Only the naive baseline is complete:
-  - 90.2% correctness
-  - 98.5% faithfulness
+- **End-to-end answer quality for every config.** Only the naive baseline is complete. On sentence-window chunks it scored 90.2% correctness and 98.5% faithfulness. On the current fixed-size chunks (all 56 questions):
+  - 87.5% correctness (85.4% on answerable questions, 80.0% on multi-part ones)
+  - 97.0% faithfulness
   - 100% correct "not found" on unanswerable questions
   - 8.3% false refusals
+
+  The two naive runs differ by under 2 questions, which is within noise for 56 questions.
 
   The `gpt-oss-120b` generator is strong enough to answer well from mediocre retrieval. The open question is whether relevance grading, compression and the grounding check (~3 extra LLM calls, ~3–4 s) improve on that enough to justify their cost. Commands:
 

@@ -94,7 +94,7 @@ Searched-unit columns score the chunk that was searched; LLM-context columns sco
 
 | Config | Correctness (all) | Answerable | Multi-hop | Correct abstention | False refusal | Faithfulness | Fully faithful | Context recall | Errors |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| naive (partial: 49/56) | 86.7% | 85.6% | 78.6% | 100.0% | 8.9% | 97.6% | 95.1% | 83.0% | 0 |
+| naive | 87.5% | 85.4% | 80.0% | 100.0% | 8.3% | 97.0% | 93.2% | 81.9% | 0 |
 
 ## Latency (6 questions, uncached)
 
