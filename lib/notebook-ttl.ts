@@ -14,9 +14,11 @@ export function isEvalCollection(collectionName: string): boolean {
 // (prefix check) and evaluation collections are excluded on top of it.
 export function isCleanupCandidate(
   collectionName: string,
-  isNotebookCollection: (name: string) => boolean
+  isNotebookCollection: (name: string) => boolean,
 ): boolean {
-  return isNotebookCollection(collectionName) && !isEvalCollection(collectionName);
+  return (
+    isNotebookCollection(collectionName) && !isEvalCollection(collectionName)
+  );
 }
 
 // Parses the createdAt stored in collection metadata. Anything unparseable
@@ -29,12 +31,20 @@ export function parseCreatedAt(value: unknown): number | null {
 
 // Expired only with a known creation time older than the TTL; a creation time
 // in the future (clock skew) is never expired.
-export function isExpired(createdAtMs: number | null, nowMs: number, ttlHours: number): boolean {
+export function isExpired(
+  createdAtMs: number | null,
+  nowMs: number,
+  ttlHours: number,
+): boolean {
   if (createdAtMs === null || !(ttlHours > 0)) return false;
   return nowMs - createdAtMs > ttlHours * HOUR_MS;
 }
 
 // At most one cleanup per interval per process.
-export function shouldRunCleanup(lastRunMs: number | null, nowMs: number, intervalMs: number): boolean {
+export function shouldRunCleanup(
+  lastRunMs: number | null,
+  nowMs: number,
+  intervalMs: number,
+): boolean {
   return lastRunMs === null || nowMs - lastRunMs >= intervalMs;
 }
