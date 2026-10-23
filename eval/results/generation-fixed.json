@@ -4,7 +4,7 @@
   "embedding": "embed-english-v3.0@1024",
   "judgeModel": "openai/gpt-oss-20b",
   "questionCount": 56,
-  "generatedAt": "2026-10-22T11:27:49.864Z",
+  "generatedAt": "2026-10-23T19:21:52.599Z",
   "configs": {
     "naive": {
       "options": {
@@ -18,22 +18,22 @@
         "topK": 5
       },
       "summary": {
-        "correctness": 0.8673469387755102,
-        "correctnessAnswerable": 0.8555555555555555,
+        "correctness": 0.875,
+        "correctnessAnswerable": 0.8541666666666666,
         "correctnessByType": {
           "factual": 0.8392857142857143,
           "keyword": 0.95,
-          "multi_hop": 0.7857142857142857,
+          "multi_hop": 0.8,
           "unanswerable": 1
         },
-        "faithfulness": 0.975609756097561,
-        "fullyFaithfulRate": 0.9512195121951219,
+        "faithfulness": 0.9696969696969696,
+        "fullyFaithfulRate": 0.9318181818181818,
         "correctAbstentionRate": 1,
-        "falseRefusalRate": 0.08888888888888889,
-        "contextRecall": 0.8296296296296295,
+        "falseRefusalRate": 0.08333333333333333,
+        "contextRecall": 0.8194444444444443,
         "retries": 0,
         "errors": 0,
-        "answered": 49
+        "answered": 56
       },
       "questions": [
         {
@@ -1427,6 +1427,158 @@
             "recall": 0.5,
             "reciprocalRank": 1
           }
+        },
+        {
+          "id": "litm-22",
+          "type": "multi_hop",
+          "question": "Why was GPT-4 tested on only part of the experiments, and how large was that subset?",
+          "answer": "GPT‑4 was not run on every experiment because doing so would be prohibitively expensive—running the full multi‑document QA and key‑value retrieval suites would cost on the order of $6,000[1].  \nInstead, the authors evaluated GPT‑4 (8K) on a **subset of 500 randomly selected multi‑document QA examples** (each containing 20 documents)[2].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "Running the full multi‑document QA and key‑value retrieval suites would cost on the order of $6,000.",
+              "supported": true
+            },
+            {
+              "claim": "The authors evaluated GPT‑4 (8K) on a subset of 500 randomly selected multi‑document QA examples (each containing 20 documents).",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer accurately reflects the key facts from the reference and all claims are supported by the provided context.",
+          "contextRecall": 1,
+          "retrieval": {
+            "hit": 1,
+            "recall": 1,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-23",
+          "type": "multi_hop",
+          "question": "For the open model compared with its base version in the instruction-tuning study, what method does it use to represent positions, and how much did instruction tuning shrink the best-to-worst accuracy gap?",
+          "answer": "The open model relies on **relative positional embeddings** to encode token positions [2].  \nInstruction fine‑tuning narrows the performance spread: the best‑to‑worst accuracy gap drops from **about 10 % to roughly 4 %**, a reduction of roughly 6 percentage points [1].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 0.5,
+          "faithfulness": 0.6666666666666666,
+          "claims": [
+            {
+              "claim": "The open model relies on relative positional embeddings to encode token positions.",
+              "supported": true
+            },
+            {
+              "claim": "Instruction fine‑tuning narrows the performance spread: the best‑to‑worst accuracy gap drops from about 10 % to roughly 4 %.",
+              "supported": true
+            },
+            {
+              "claim": "The reduction is roughly 6 percentage points.",
+              "supported": false
+            }
+          ],
+          "reasoning": "The answer partially matches the reference: it correctly cites the 10% to 4% gap but incorrectly generalizes the positional encoding to relative embeddings instead of the specific ALiBi method, and it adds an unsupported numeric detail.",
+          "contextRecall": 0.5,
+          "retrieval": {
+            "hit": 1,
+            "recall": 0.5,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-24",
+          "type": "multi_hop",
+          "question": "In the open-domain QA case study, which retriever supplied the documents, and how much did GPT-3.5-Turbo and Claude-1.3 gain from using more than 20 retrieved documents?",
+          "answer": "The open‑domain QA case study retrieved its documents with the **Contriever** retriever [1].  \nWhen the number of retrieved documents was increased beyond 20, the reader models showed only a small improvement: **≈1.5 %** higher accuracy for **GPT‑3.5‑Turbo** and **≈1 %** higher accuracy for **Claude‑1.3** [1][4].",
+          "abstained": false,
+          "verdict": "unverified",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": 1,
+          "claims": [
+            {
+              "claim": "The retriever used was Contriever.",
+              "supported": true
+            },
+            {
+              "claim": "GPT-3.5-Turbo gained about 1.5% accuracy when using more than 20 retrieved documents.",
+              "supported": true
+            },
+            {
+              "claim": "Claude-1.3 gained about 1% accuracy when using more than 20 retrieved documents.",
+              "supported": true
+            }
+          ],
+          "reasoning": "The system answer exactly matches the reference answer and all factual claims are directly supported by the provided context.",
+          "contextRecall": 0.5,
+          "retrieval": {
+            "hit": 1,
+            "recall": 0.5,
+            "reciprocalRank": 1
+          }
+        },
+        {
+          "id": "litm-25",
+          "type": "unanswerable",
+          "question": "What accuracy do the Llama-2 models reach on the synthetic key-value retrieval task with 300 pairs?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": null,
+          "retrieval": null
+        },
+        {
+          "id": "litm-26",
+          "type": "unanswerable",
+          "question": "How does Claude 2 compare with Claude-1.3 on the 30-document multi-document QA setting?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": null,
+          "retrieval": null
+        },
+        {
+          "id": "litm-27",
+          "type": "unanswerable",
+          "question": "How many GPU hours did it take to run the open models (MPT-30B-Instruct, LongChat-13B) for all experiments?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": null,
+          "retrieval": null
+        },
+        {
+          "id": "litm-28",
+          "type": "unanswerable",
+          "question": "Does the U-shaped position effect also appear on multi-hop datasets such as HotpotQA or TriviaQA in this paper?",
+          "answer": "I could not find that in the uploaded document.",
+          "abstained": true,
+          "verdict": "not_found",
+          "retried": false,
+          "correctness": 1,
+          "faithfulness": null,
+          "claims": [],
+          "reasoning": "Scored without the judge: the system said the answer is not in the document.",
+          "contextRecall": null,
+          "retrieval": null
         }
       ],
       "errors": []
