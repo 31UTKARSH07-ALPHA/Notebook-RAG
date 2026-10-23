@@ -417,3 +417,19 @@ button:disabled {
   font-style: italic;
   line-height: 1.45;
 }
+
+.answer p,
+.answer ul,
+.answer ol {
+  margin: 0;
+  white-space: normal;
+}
+
+.answer > * + * {
+  margin-top: 8px;
+}
+
+.answer ul,
+.answer ol {
+  padding-left: 22px;
+}

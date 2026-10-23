@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { BookOpen, FilePlus2, FileText, Info, Loader2, Send, UploadCloud } from "lucide-react";
 import { MAX_UPLOAD_LABEL, isUploadTooLarge, uploadTooLargeMessage } from "@/lib/upload-limits";
+import { Inline, parseAnswer } from "@/lib/answer-format";
 
 // Sent by /api/demo when the server runs with DEMO_MODE=true
 type DemoInfo = {
@@ -357,7 +358,7 @@ export default function Home() {
         <div className="tips" aria-label="Pipeline">
           <div className="tip">
             <strong>Chunking</strong>
-            <p className="section-note">2-sentence chunks are searched; the LLM sees them with 2 sentences of context on each side.</p>
+            <p className="section-note">~1000-character chunks with 200 characters of overlap, chosen by evaluating three chunking strategies.</p>
           </div>
           <div className="tip">
             <strong>Retrieval</strong>
@@ -400,7 +401,9 @@ export default function Home() {
                 {message.searchedFor ? (
                   <div className="searched-for">Searched for: {message.searchedFor}</div>
                 ) : null}
-                <div className="bubble">{message.content}</div>
+                <div className="bubble">
+                  {message.role === "assistant" ? <AnswerText text={message.content} /> : message.content}
+                </div>
                 {message.grounding ? (
                   <div
                     className={`grounding ${message.grounding.verdict}`}
@@ -451,5 +454,41 @@ export default function Home() {
         </form>
       </section>
     </main>
+  );
+}
+
+function InlineText({ parts }: { parts: Inline[] }) {
+  return (
+    <>
+      {parts.map((part, i) => (part.bold ? <strong key={i}>{part.text}</strong> : <span key={i}>{part.text}</span>))}
+    </>
+  );
+}
+
+// Renders the bold/list subset of Markdown the model uses (see lib/answer-format.ts)
+function AnswerText({ text }: { text: string }) {
+  return (
+    <div className="answer">
+      {parseAnswer(text).map((block, i) => {
+        if (block.type === "list") {
+          const items = block.items.map((item, j) => (
+            <li key={j}>
+              <InlineText parts={item} />
+            </li>
+          ));
+          return block.ordered ? <ol key={i}>{items}</ol> : <ul key={i}>{items}</ul>;
+        }
+        return (
+          <p key={i}>
+            {block.lines.map((line, j) => (
+              <span key={j}>
+                {j > 0 ? <br /> : null}
+                <InlineText parts={line} />
+              </span>
+            ))}
+          </p>
+        );
+      })}
+    </div>
   );
 }
